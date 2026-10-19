@@ -1,80 +1,34 @@
-# React + TypeScript + Vite
+# Frontend: Tournament System
 
-## Autenticacion
+## Requisitos
 
-La autenticacion usa Firebase Authentication en el cliente y una sesion
-HttpOnly emitida por Spring Boot. Activa en Firebase los proveedores Google,
-GitHub, Microsoft y correo/contraseña, y configura sus dominios autorizados.
+- Node.js LTS compatible with Vite 8.
+- npm (incluido con Node.js).
 
-1. Copia `.env.example` a `.env.local`.
-2. Completa las variables `VITE_FIREBASE_*` desde la configuracion de tu
+## Instalacion y ejecucion
+
+1. Copia `.env.example` como `.env.local`.
+2. Completa las variables `VITE_FIREBASE_*` con la configuracion de tu
    aplicacion web de Firebase.
-3. Define `VITE_API_URL` y, si es necesario, cambia
-   `VITE_AUTH_ENDPOINT` (por defecto `/auth/firebase`).
-4. El endpoint de Spring Boot debe verificar el `Authorization: Bearer
-   <firebase-id-token>` con Firebase Admin SDK, crear la cookie de sesion
-   `HttpOnly` y responder `{ "user": { ... } }`.
+3. Instala las dependencias con `npm ci`.
+4. Inicia el frontend con `npm run dev`.
 
-El frontend nunca recibe credenciales de proveedores sociales ni tokens de
-sesion. Firebase realiza el login una sola vez; Spring Boot confirma el ID
-token y devuelve una cookie `HttpOnly`. Todas las peticiones del backend deben
-realizarse mediante `apiClient` desde `src/services/apiClient.ts`, que usa
-`withCredentials: true`. Si el backend utiliza protección CSRF, debe emitir la
-cookie `XSRF-TOKEN`; Axios la enviará como `X-XSRF-TOKEN`.
+Vite sirve la aplicacion en `http://localhost:5173`. El cliente HTTP se conecta
+por defecto al backend Spring Boot en `http://localhost:8080`; puedes cambiarlo
+con `VITE_API_URL`. No pongas secretos de servidor en variables `VITE_*`, ya
+que se incluyen en el cliente web.
 
-La restauración usa `GET /auth/session`. El cierre usa `POST /auth/logout`.
-Las rutas `/dashboard` y `/admin` están protegidas. `/admin` requiere el rol
-`ADMIN`; un usuario sin permisos se redirige a `/forbidden`. Estos guards son
-solo UX: Spring Boot debe aplicar siempre la autorización real.
+## Backend y autenticacion
 
-### Estado de sesión con Redux
+La estrategia configurada por defecto usa una cookie de sesion HttpOnly. El
+frontend espera que el backend implemente `POST /auth/firebase`,
+`GET /auth/session` y `POST /auth/logout`; el inicio de sesion envia el ID token
+de Firebase y espera una respuesta con la forma `{ "user": { ... } }`.
+`apiClient` esta en `src/infrastructure/http/apiClient.ts` y envia cookies con
+credenciales.
 
-La sesión se administra en el slice `src/store/authSlice.ts` y se registra
-mediante `Provider` en `src/main.tsx`. Para leerla desde cualquier componente:
-
-```tsx
-import { useAppSelector } from "../store/hooks";
-
-const { user, token, loading } = useAppSelector((state) => state.auth);
-```
-
-Las acciones de login/logout continúan expuestas por `useAuth`, pero el estado
-ya no se duplica en React local:
-
-```tsx
-const { user, logout } = useAuth();
-```
-
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+El repositorio backend actualmente es un esqueleto sin esos controladores. La
+configuracion de CORS permite el origen local de Vite para que la comunicacion
+entre proyectos pueda habilitarse al implementar sus endpoints. El backend
+debe verificar los tokens con Firebase Admin SDK y aplicar la autorizacion en
+el servidor; los guards del frontend solo controlan la navegacion.
