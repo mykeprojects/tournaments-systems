@@ -17,21 +17,20 @@ export interface CreateApiClientOptions {
 const resolveBaseURL = (): string => {
   const envBaseUrl =
     import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  const baseURL = envBaseUrl || "http://localhost:8181";
 
-  return envBaseUrl || "http://localhost:8080";
+  return baseURL.replace(/\/api\/?$/i, "").replace(/\/+$/, "");
 };
 
 const resolveStrategy = (): SessionStrategyType => {
   const strategyEnv = import.meta.env.VITE_AUTH_STRATEGY?.toLowerCase();
-  return strategyEnv === "bearer" ? "bearer" : "cookie";
+  return strategyEnv === "cookie" ? "cookie" : "bearer";
 };
 
 /**
  * Cliente HTTP centralizado para comunicación con el backend (Spring Boot u otros).
  *
- * - Por defecto utiliza la estrategia 'cookie' (HttpOnly Cookie): no adjunta tokens Bearer
- *   en las peticiones de negocio; el navegador gestiona automáticamente las cookies de sesión
- *   mediante `withCredentials: true`.
+ * - Usa JWT Bearer por defecto y no depende de cookies de sesión.
  * - El interceptor de 401 evita bucles de reintentos infinitos y no cierra la sesión
  *   indiscriminadamente ante errores que no correspondan a sesiones expiradas en endpoints protegidos.
  */
@@ -50,10 +49,7 @@ export class ApiHttpClient {
       headers: {
         "Content-Type": "application/json",
       },
-      withCredentials: true,
-      withXSRFToken: true,
-      xsrfCookieName: "XSRF-TOKEN",
-      xsrfHeaderName: "X-XSRF-TOKEN",
+      withCredentials: false,
       timeout: options.timeoutMs ?? 15000,
     });
 

@@ -1,9 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import SignIn from "../pages/Authentication/SignIn";
-import SignUp from "../pages/Authentication/SignUp";
 import Dashboard from "../pages/Protected/Dashboard";
-import Forbidden from "../pages/Protected/Forbidden";
-import { AuthGuard, RoleGuard } from "./guards";
+import { AuthGuard } from "./guards";
 import { routePaths } from "./routePaths";
 
 export { routePaths };
@@ -21,13 +19,8 @@ export const router = createBrowserRouter([
         element: <Dashboard />,
       },
       {
-        element: <RoleGuard allowedRoles={["ADMIN"]} />,
-        children: [
-          {
-            path: routePaths.admin,
-            element: <Dashboard />, // Sustituir por AdminDashboard si aplica
-          },
-        ],
+        path: routePaths.admin,
+        element: <Dashboard />,
       },
     ],
   },
@@ -38,13 +31,8 @@ export const router = createBrowserRouter([
   },
   {
     path: routePaths.signUp,
-    element: <SignUp />,
+    element: <Navigate to={routePaths.signIn} replace />,
   },
-  {
-    path: routePaths.forbidden,
-    element: <Forbidden />,
-  },
-
   {
     path: "*",
     element: <Navigate to={routePaths.signIn} replace />,

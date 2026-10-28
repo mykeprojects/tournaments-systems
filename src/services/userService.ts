@@ -1,25 +1,149 @@
-import type { User as FirebaseUser } from "firebase/auth";
-import type { AppUser } from "../domain/auth";
+import axios from "axios";
+import apiClient from "../infrastructure/http/apiClient";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+export interface UserSummary {
+  id: number;
+  name: string;
+  email: string;
+}
 
-export const fetchUserProfile = async (firebaseUser: FirebaseUser): Promise<AppUser> => {
-  const token = await firebaseUser.getIdToken();
+export interface CreateUserRequest {
+  name: string;
+  email: string;
+  password: string;
+}
 
-  const response = await fetch(`${API_BASE_URL}/users/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+export interface UserWithRoles extends UserSummary {
+  roles: Array<{
+    id: number;
+    userId: number;
+    role: {
+      id: number;
+      name: string;
+      description: string;
+    };
+  }>;
+}
 
-  if (!response.ok) {
-    throw new Error(`Error en el backend (${response.status}): ${response.statusText}`);
+export interface Profile {
+  id: number;
+  userId: number;
+  phone: string;
+  photoUrl: string | null;
+  birthDate: string;
+}
+
+export interface UserDetail extends UserSummary {
+  profile: Profile | null;
+}
+
+export const listUsers = async (): Promise<UserSummary[]> => {
+  const response = await apiClient.get<UserSummary[]>("/api/users");
+  return response.data;
+};
+
+export const getUserWithRoles = async (userId: number): Promise<UserWithRoles> => {
+  const response = await apiClient.get<UserWithRoles>(
+    `/api/users/${userId}/detail-with-roles`
+  );
+  return response.data;
+};
+
+export const getUserRoleAssignments = async (
+  userId: number
+): Promise<UserWithRoles["roles"]> => {
+  const response = await apiClient.get<UserWithRoles["roles"]>(
+    `/api/user-roles/users/${userId}`
+  );
+  return response.data;
+};
+
+export const getUserDetail = async (userId: number): Promise<UserDetail> => {
+  const response = await apiClient.get<UserDetail>(`/api/users/${userId}/detail`);
+  return response.data;
+};
+
+export const getProfile = async (userId: number): Promise<Profile> => {
+  const response = await apiClient.get<Profile>(`/api/users/${userId}/profile`);
+  return response.data;
+};
+
+export const createProfile = async (
+  userId: number,
+  profile: Omit<Profile, "id" | "userId">
+): Promise<Profile> => {
+  const response = await apiClient.post<Profile>(
+    `/api/users/${userId}/profile`,
+    profile
+  );
+  return response.data;
+};
+
+export const updateProfile = async (
+  userId: number,
+  profile: Omit<Profile, "id" | "userId">
+): Promise<Profile> => {
+  const response = await apiClient.put<Profile>(
+    `/api/users/${userId}/profile`,
+    profile
+  );
+  return response.data;
+};
+
+export const createUser = async (
+  user: CreateUserRequest
+): Promise<UserSummary> => {
+  const response = await apiClient.post<UserSummary>("/api/users", user);
+  return response.data;
+};
+
+export const deleteUser = async (userId: number): Promise<void> => {
+  await apiClient.delete(`/api/users/${userId}`);
+};
+
+export const isUserServiceNotFoundError = (error: unknown): boolean =>
+  axios.isAxiosError(error) && error.response?.status === 404;
+
+export const getUserServiceErrorMessage = (
+  error: unknown,
+  fallback: string
+): string => {
+  if (!axios.isAxiosError<unknown>(error)) {
+    return error instanceof Error ? error.message : fallback;
   }
 
-  const backendData = await response.json();
+  const responseData = error.response?.data;
 
-  return Object.assign(firebaseUser, {
-    role: backendData.role,
-  }) as AppUser;
+  if (responseData && typeof responseData === "object") {
+    const data = responseData as Record<string, unknown>;
+
+    if (typeof data.message === "string" && data.message.trim()) {
+      return data.message;
+    }
+
+    const fieldErrors = Object.entries(data)
+      .filter(([, value]) => typeof value === "string" || Array.isArray(value))
+      .map(([field, value]) => {
+        const messages = Array.isArray(value) ? value.join(", ") : value;
+        return `${field}: ${String(messages)}`;
+      });
+
+    if (fieldErrors.length > 0) {
+      return fieldErrors.join(" ");
+    }
+  }
+
+  if (error.response?.status === 401) {
+    return "La sesión expiró. Inicia sesión nuevamente.";
+  }
+
+  if (error.response?.status === 403) {
+    return "Tu usuario no tiene permisos para gestionar usuarios.";
+  }
+
+  if (!error.response) {
+    return "No se pudo conectar con el backend. Verifica que esté activo en localhost:8181.";
+  }
+
+  return fallback;
 };

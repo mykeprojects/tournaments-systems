@@ -9,16 +9,10 @@ const CURRENT_YEAR = new Date().getFullYear();
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { loginWithCredentials } = useAuth();
 
   const from =
     (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
-
-  const {
-    loginWithCredentials,
-    loginWithGoogle,
-    loginWithGitHub,
-    loginWithMicrosoft,
-  } = useAuth();
 
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,34 +23,22 @@ const SignIn: React.FC = () => {
     try {
       await loginWithCredentials(credentials.email, credentials.password);
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al iniciar sesión", error);
       setLoginError(
-        error?.message || "Credenciales inválidas o error al iniciar sesión."
+        error instanceof Error
+          ? error.message
+          : "Credenciales inválidas o error al iniciar sesión."
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSocialLogin = async (
-    provider: "google" | "github" | "microsoft"
-  ) => {
-    setLoginError(null);
-    setIsSubmitting(true);
-    try {
-      if (provider === "google") await loginWithGoogle();
-      if (provider === "github") await loginWithGitHub();
-      if (provider === "microsoft") await loginWithMicrosoft();
-      navigate(from, { replace: true });
-    } catch (error: any) {
-      console.error(`Error en login con ${provider}:`, error);
-      setLoginError(
-        error?.message || `Error al iniciar sesión con ${provider}.`
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSocialLogin = (provider: string) => {
+    setLoginError(
+      `El inicio de sesión con ${provider} estará disponible cuando se integre el proveedor externo.`
+    );
   };
 
   const inputClass =
@@ -276,7 +258,7 @@ const SignIn: React.FC = () => {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => void handleSocialLogin("google")}
+                onClick={() => handleSocialLogin("Google")}
                 className={socialButtonClass}
               >
                 <svg
@@ -307,7 +289,7 @@ const SignIn: React.FC = () => {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => void handleSocialLogin("github")}
+                onClick={() => handleSocialLogin("GitHub")}
                 className={socialButtonClass}
               >
                 <svg
@@ -323,7 +305,7 @@ const SignIn: React.FC = () => {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => void handleSocialLogin("microsoft")}
+                onClick={() => handleSocialLogin("Microsoft")}
                 className={socialButtonClass}
               >
                 <span className="grid h-5 w-5 grid-cols-2 gap-0.5">

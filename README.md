@@ -1,80 +1,57 @@
-# React + TypeScript + Vite
+# Sports System+ — Frontend
 
-## Autenticacion
+Frontend en React, TypeScript y Vite para el módulo de seguridad del sistema
+de torneos.
 
-La autenticacion usa Firebase Authentication en el cliente y una sesion
-HttpOnly emitida por Spring Boot. Activa en Firebase los proveedores Google,
-GitHub, Microsoft y correo/contraseña, y configura sus dominios autorizados.
+## Desarrollo local
 
-1. Copia `.env.example` a `.env.local`.
-2. Completa las variables `VITE_FIREBASE_*` desde la configuracion de tu
-   aplicacion web de Firebase.
-3. Define `VITE_API_URL` y, si es necesario, cambia
-   `VITE_AUTH_ENDPOINT` (por defecto `/auth/firebase`).
-4. El endpoint de Spring Boot debe verificar el `Authorization: Bearer
-   <firebase-id-token>` con Firebase Admin SDK, crear la cookie de sesion
-   `HttpOnly` y responder `{ "user": { ... } }`.
+1. Inicia el backend Spring Boot. Su configuración local usa el puerto `8181`.
+2. Define en `.env.local` la URL base del backend:
 
-El frontend nunca recibe credenciales de proveedores sociales ni tokens de
-sesion. Firebase realiza el login una sola vez; Spring Boot confirma el ID
-token y devuelve una cookie `HttpOnly`. Todas las peticiones del backend deben
-realizarse mediante `apiClient` desde `src/services/apiClient.ts`, que usa
-`withCredentials: true`. Si el backend utiliza protección CSRF, debe emitir la
-cookie `XSRF-TOKEN`; Axios la enviará como `X-XSRF-TOKEN`.
+   ```dotenv
+   VITE_API_BASE_URL=http://localhost:8181
+   ```
 
-La restauración usa `GET /auth/session`. El cierre usa `POST /auth/logout`.
-Las rutas `/dashboard` y `/admin` están protegidas. `/admin` requiere el rol
-`ADMIN`; un usuario sin permisos se redirige a `/forbidden`. Estos guards son
-solo UX: Spring Boot debe aplicar siempre la autorización real.
+   La URL debe ser el origen del servidor, sin `/api` al final. Si no se
+   configura, el frontend usa `http://localhost:8181`.
+3. Instala dependencias con `npm install` y ejecuta `npm run dev`.
 
-### Estado de sesión con Redux
+El backend debe permitir el origen local del frontend en su configuración de
+CORS.
 
-La sesión se administra en el slice `src/store/authSlice.ts` y se registra
-mediante `Provider` en `src/main.tsx`. Para leerla desde cualquier componente:
+## Acceso y gestión de usuarios
 
-```tsx
-import { useAppSelector } from "../store/hooks";
+- El inicio de sesión envía correo y contraseña a `POST /api/auth/login`.
+- El JWT y su fecha de expiración se guardan en `sessionStorage` y se envían
+  como `Authorization: Bearer ...` a las rutas protegidas. La sesión local se
+  elimina al cerrar sesión o al expirar el token.
+- El panel (`/dashboard` o `/admin`) consulta `GET /api/users` y crea usuarios
+  con `POST /api/users`. El acceso al panel se limita en el frontend a cuentas
+  con el rol `ADMIN`, consultado en `GET /api/user-roles/users/{userId}`.
+- En la tabla de usuarios, un administrador puede asignar roles con
+  `POST /api/user-roles` y eliminar usuarios con `DELETE /api/users/{id}`.
+  Los roles y asignaciones se cargan desde `GET /api/roles` y
+  `GET /api/user-roles`.
+- El formulario de creación valida nombre, correo y las reglas de contraseña
+  esperadas por el backend. La contraseña nunca se envía a un servicio externo;
+  el backend la almacena con BCrypt.
+- Los permisos reales siguen siendo responsabilidad del backend. Si el usuario
+  autenticado no tiene permiso para listar o crear usuarios, la API rechazará
+  la operación y el panel mostrará el error. El rol mostrado por el frontend
+  solo controla la experiencia de usuario: el backend debe asignar los
+  permisos de cada operación exclusivamente a los roles autorizados.
+- Las cuentas iniciales, incluido el administrador, se pueden insertar con el
+  seeder o manualmente en la base de datos. No conectes el navegador
+  directamente a MySQL.
 
-const { user, token, loading } = useAppSelector((state) => state.auth);
+La integración de Firebase/OAuth se mantiene fuera de este flujo de trabajo y
+se incorporará por separado.
+
+## Comandos
+
+```powershell
+npm run dev
+npm run lint
+npm run build
+npm test
 ```
-
-Las acciones de login/logout continúan expuestas por `useAuth`, pero el estado
-ya no se duplica en React local:
-
-```tsx
-const { user, logout } = useAuth();
-```
-
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.

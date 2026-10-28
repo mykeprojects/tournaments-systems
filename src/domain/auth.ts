@@ -1,7 +1,27 @@
-import type { User as FirebaseUser } from "firebase/auth";
-
-export type AppRole = "ADMIN" | "USER" | "EDITOR"; // Tus roles
-
-export interface AppUser extends FirebaseUser {
-    role: AppRole;
-}
+export type {
+  AppProfile,
+  AppRole,
+  AppUser,
+  AuthProviderType,
+  AuthSession,
+  AuthSessionResponseDTO,
+  IdentityProviderResult,
+  IdentityUser,
+  LoginCredentials,
+} from "./auth/entities";
+export type {
+  IAuthBackendService,
+  IAuthIdentityProvider,
+} from "./auth/contracts";
+export {
+  AccountExistsWithDifferentCredentialError,
+  AuthError,
+  AuthPopupClosedError,
+  InvalidCredentialsError,
+  InvalidServerResponseError,
+  NetworkAuthError,
+  ServerAuthenticationError,
+  SessionExpiredError,
+  UnexpectedAuthError,
+  UserDisabledError,
+} from "./auth/errors";
