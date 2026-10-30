@@ -9,7 +9,10 @@ import {
   login,
   loginWithExternalProvider,
   logout as logoutFromBackend,
+  verifyTwoFactor,
+  type AuthSessionResponse,
 } from "../services/authService";
+import type { CredentialsLoginResult } from "./AuthContextDefinition";
 import type { AuthProviderType } from "../domain/auth";
 import {
   clearAuthCookies,
@@ -110,8 +113,10 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => window.clearTimeout(timeout);
   }, [user, expiresAt]);
 
-  const loginWithCredentials = async (email: string, password: string): Promise<void> => {
-    const session = await login(email, password);
+  const applyAuthenticatedSession = async (
+    session: AuthSessionResponse,
+    email: string
+  ): Promise<void> => {
     const expirationTime = Date.parse(session.expiresAt);
 
     if (!session.accessToken || !Number.isFinite(expirationTime) || expirationTime <= Date.now()) {
@@ -138,6 +143,49 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const loginWithCredentials = async (
+    email: string,
+    password: string
+  ): Promise<CredentialsLoginResult> => {
+    const session = await login(email, password);
+
+    if (session.requiresTwoFactor) {
+      if (!session.challengeToken) {
+        throw new Error("El backend no devolvió el token de verificación de dos factores.");
+      }
+
+      return {
+        requiresTwoFactor: true,
+        challengeToken: session.challengeToken,
+        expiresAt: session.expiresAt ?? "",
+        message: session.message ?? undefined,
+      };
+    }
+
+    if (!session.accessToken || !session.expiresAt) {
+      throw new Error("El backend devolvió una sesión inválida o vencida.");
+    }
+
+    await applyAuthenticatedSession(
+      {
+        accessToken: session.accessToken,
+        tokenType: session.tokenType ?? "Bearer",
+        expiresAt: session.expiresAt,
+      },
+      email
+    );
+    return { requiresTwoFactor: false };
+  };
+
+  const completeTwoFactorLogin = async (
+    challengeToken: string,
+    code: string,
+    email: string
+  ): Promise<void> => {
+    const session = await verifyTwoFactor(challengeToken, code);
+    await applyAuthenticatedSession(session, email);
   };
 
   const loginWithProvider = async (provider: AuthProviderType): Promise<void> => {
@@ -219,6 +267,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     isAdmin,
     roleCheckError,
     loginWithCredentials,
+    completeTwoFactorLogin,
     loginWithProvider,
     refreshAdminStatus,
     logout,

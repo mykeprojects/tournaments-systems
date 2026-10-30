@@ -10,19 +10,32 @@ const CURRENT_YEAR = new Date().getFullYear();
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginWithCredentials, loginWithProvider } = useAuth();
+  const { loginWithCredentials, completeTwoFactorLogin, loginWithProvider } = useAuth();
 
   const from =
     (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
 
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingTwoFactor, setPendingTwoFactor] = useState<{
+    email: string;
+    challengeToken: string;
+    message?: string;
+  } | null>(null);
 
   const handleLogin = async (credentials: { email: string; password: string }) => {
     setLoginError(null);
     setIsSubmitting(true);
     try {
-      await loginWithCredentials(credentials.email, credentials.password);
+      const result = await loginWithCredentials(credentials.email, credentials.password);
+      if (result.requiresTwoFactor) {
+        setPendingTwoFactor({
+          email: credentials.email,
+          challengeToken: result.challengeToken,
+          message: result.message,
+        });
+        return;
+      }
       navigate(from, { replace: true });
     } catch (error: unknown) {
       console.error("Error al iniciar sesión", error);
@@ -30,6 +43,31 @@ const SignIn: React.FC = () => {
         error instanceof Error
           ? error.message
           : "Credenciales inválidas o error al iniciar sesión."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTwoFactor = async (values: { code: string }) => {
+    if (!pendingTwoFactor) {
+      return;
+    }
+
+    setLoginError(null);
+    setIsSubmitting(true);
+    try {
+      await completeTwoFactorLogin(
+        pendingTwoFactor.challengeToken,
+        values.code,
+        pendingTwoFactor.email
+      );
+      navigate(from, { replace: true });
+    } catch (error: unknown) {
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "El código no es válido o ha expirado."
       );
     } finally {
       setIsSubmitting(false);
@@ -160,13 +198,16 @@ const SignIn: React.FC = () => {
 
             <div className="mb-8">
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-lime-400">
-                Bienvenido de nuevo
+                {pendingTwoFactor ? "Segundo factor" : "Bienvenido de nuevo"}
               </p>
               <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
-                Entra en juego
+                {pendingTwoFactor ? "Verifica tu acceso" : "Entra en juego"}
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">
-                Inicia sesión para continuar en tu comunidad deportiva.
+                {pendingTwoFactor
+                  ? pendingTwoFactor.message
+                    || `Enviamos un código de 6 dígitos a ${pendingTwoFactor.email}. La sesión no quedará activa hasta que lo confirmes.`
+                  : "Inicia sesión para continuar en tu comunidad deportiva."}
               </p>
             </div>
 
@@ -179,7 +220,65 @@ const SignIn: React.FC = () => {
               </div>
             )}
 
+            {pendingTwoFactor ? (
             <Formik
+              key="two-factor-form"
+              initialValues={{ code: "" }}
+              validationSchema={Yup.object({
+                code: Yup.string()
+                  .matches(/^\d{6}$/, "El código debe tener 6 dígitos")
+                  .required("El código es obligatorio"),
+              })}
+              onSubmit={(values) => void handleTwoFactor(values)}
+            >
+              {({ handleSubmit }) => (
+                <Form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label
+                      htmlFor="code"
+                      className="block text-sm font-semibold text-slate-200"
+                    >
+                      Código de verificación
+                    </label>
+                    <Field
+                      id="code"
+                      name="code"
+                      inputMode="numeric"
+                      maxLength={6}
+                      autoComplete="one-time-code"
+                      placeholder="000000"
+                      className={inputClass}
+                    />
+                    <ErrorMessage
+                      name="code"
+                      component="p"
+                      className="mt-2 text-xs text-red-400"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3.5 text-sm font-extrabold text-[#102016] shadow-lg shadow-lime-950/20 transition hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300 focus:ring-offset-2 focus:ring-offset-[#07110d] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting ? "Verificando..." : "Confirmar código"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      setPendingTwoFactor(null);
+                      setLoginError(null);
+                    }}
+                    className="w-full text-center text-sm font-bold text-slate-400 transition hover:text-white"
+                  >
+                    Cancelar y volver
+                  </button>
+                </Form>
+              )}
+            </Formik>
+            ) : (
+            <Formik
+              key="credentials-form"
               initialValues={{ email: "", password: "" }}
               validationSchema={Yup.object({
                 email: Yup.string()
@@ -252,7 +351,9 @@ const SignIn: React.FC = () => {
                 </Form>
               )}
             </Formik>
+            )}
 
+            {!pendingTwoFactor && (
             <p className="mt-5 text-center text-sm text-slate-400">
               ¿Aún no tienes una cuenta?{" "}
               <Link
@@ -262,13 +363,18 @@ const SignIn: React.FC = () => {
                 Crear cuenta
               </Link>
             </p>
+            )}
+            {!pendingTwoFactor && (
             <Link
               to={routePaths.forgotPassword}
               className="mt-4 block text-center text-sm font-bold text-lime-400 underline decoration-lime-400/40 underline-offset-4 transition hover:text-lime-300"
             >
               ¿Olvidaste tu contraseña?
             </Link>
+            )}
 
+            {!pendingTwoFactor && (
+            <>
             <div className="my-7 flex items-center gap-4">
               <div className="h-px flex-1 bg-slate-800" />
               <span className="text-xs font-medium text-slate-500">
@@ -340,6 +446,8 @@ const SignIn: React.FC = () => {
                 Continuar con Microsoft
               </button>
             </div>
+            </>
+            )}
 
             <p className="mt-8 text-center text-xs leading-5 text-slate-500">
               Al continuar, accedes a tu cuenta de Sports System+ y aceptas las

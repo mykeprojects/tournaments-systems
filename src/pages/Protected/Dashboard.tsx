@@ -12,6 +12,11 @@ import {
   type UserDetail,
   type UserSummary,
 } from "../../services/userService";
+import {
+  getTwoFactorStatus,
+  updateTwoFactorPreference,
+  type TwoFactorStatus,
+} from "../../services/authService";
 
 const EMPTY_USER_FORM = { name: "", email: "", password: "" };
 const EMPTY_PROFILE_FORM = { phone: "", photoUrl: "", birthDate: "" };
@@ -45,6 +50,10 @@ const Dashboard = () => {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorStatus | null>(null);
+  const [isUpdatingTwoFactor, setIsUpdatingTwoFactor] = useState(false);
+  const [twoFactorError, setTwoFactorError] = useState<string | null>(null);
+  const [twoFactorSuccess, setTwoFactorSuccess] = useState<string | null>(null);
 
   const refreshUsers = useCallback(async () => {
     try {
@@ -102,9 +111,9 @@ const Dashboard = () => {
           setProfile(details.profile);
           setProfileForm(details.profile
             ? {
-                phone: details.profile.phone,
+                phone: details.profile.phone ?? "",
                 photoUrl: details.profile.photoUrl ?? "",
-                birthDate: details.profile.birthDate,
+                birthDate: details.profile.birthDate ?? "",
               }
             : EMPTY_PROFILE_FORM);
         }
@@ -128,6 +137,71 @@ const Dashboard = () => {
       active = false;
     };
   }, [isAdmin, user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let active = true;
+    void getTwoFactorStatus()
+      .then((status) => {
+        if (active) {
+          setTwoFactorStatus(status);
+          setTwoFactorError(null);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setTwoFactorError(
+            error instanceof Error
+              ? error.message
+              : "No fue posible consultar la autenticación de dos factores."
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const handleToggleTwoFactor = async () => {
+    if (!twoFactorStatus?.available) {
+      return;
+    }
+
+    const nextEnabled = !twoFactorStatus.enabled;
+    const confirmation = nextEnabled
+      ? "Al habilitar el segundo factor, el próximo inicio de sesión con correo y contraseña pedirá un código enviado a tu correo."
+      : "Si deshabilitas el segundo factor, tu cuenta quedará protegida solo con la contraseña.";
+
+    if (!window.confirm(confirmation)) {
+      return;
+    }
+
+    setIsUpdatingTwoFactor(true);
+    setTwoFactorError(null);
+    setTwoFactorSuccess(null);
+
+    try {
+      const status = await updateTwoFactorPreference(nextEnabled);
+      setTwoFactorStatus(status);
+      setTwoFactorSuccess(
+        status.enabled
+          ? "La autenticación de dos factores quedó habilitada."
+          : "La autenticación de dos factores quedó deshabilitada."
+      );
+    } catch (error) {
+      setTwoFactorError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible actualizar la autenticación de dos factores."
+      );
+    } finally {
+      setIsUpdatingTwoFactor(false);
+    }
+  };
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -220,9 +294,9 @@ const Dashboard = () => {
         : await createProfile(user.id, profileData);
       setProfile(savedProfile);
       setProfileForm({
-        phone: savedProfile.phone,
+        phone: savedProfile.phone ?? "",
         photoUrl: savedProfile.photoUrl ?? "",
-        birthDate: savedProfile.birthDate,
+        birthDate: savedProfile.birthDate ?? "",
       });
       setIsEditingProfile(false);
       setSuccessMessage("Tu perfil se guardó correctamente.");
@@ -313,6 +387,43 @@ const Dashboard = () => {
               : "Consulta tus datos y actualiza tu teléfono y foto de perfil."}
           </p>
         </div>
+
+        {twoFactorStatus?.available && (
+          <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="text-xl font-bold">Autenticación de dos factores</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                  {twoFactorStatus.enabled
+                    ? "Tu cuenta pide un código enviado al correo después de validar la contraseña."
+                    : "Agrega un código temporal al iniciar sesión con correo y contraseña."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleToggleTwoFactor()}
+                disabled={isUpdatingTwoFactor}
+                className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] disabled:opacity-60"
+              >
+                {isUpdatingTwoFactor
+                  ? "Guardando..."
+                  : twoFactorStatus.enabled
+                    ? "Deshabilitar 2FA"
+                    : "Habilitar 2FA"}
+              </button>
+            </div>
+            {twoFactorSuccess && (
+              <p role="status" className="mt-4 rounded-xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-200">
+                {twoFactorSuccess}
+              </p>
+            )}
+            {twoFactorError && (
+              <p role="alert" className="mt-4 text-sm text-red-300">
+                {twoFactorError}
+              </p>
+            )}
+          </section>
+        )}
 
         {roleCheckError ? (
           <section className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
@@ -584,7 +695,7 @@ const Dashboard = () => {
                       type="tel"
                       required
                       maxLength={30}
-                      value={profileForm.phone}
+                      value={profileForm.phone ?? ""}
                       onChange={(event) =>
                         setProfileForm((current) => ({ ...current, phone: event.target.value }))
                       }
@@ -599,7 +710,7 @@ const Dashboard = () => {
                       id="profile-photo"
                       type="url"
                       maxLength={2048}
-                      value={profileForm.photoUrl}
+                      value={profileForm.photoUrl ?? ""}
                       onChange={(event) =>
                         setProfileForm((current) => ({ ...current, photoUrl: event.target.value }))
                       }
@@ -616,7 +727,7 @@ const Dashboard = () => {
                         type="date"
                         required
                         max={LATEST_BIRTH_DATE}
-                        value={profileForm.birthDate}
+                        value={profileForm.birthDate ?? ""}
                         onChange={(event) =>
                           setProfileForm((current) => ({ ...current, birthDate: event.target.value }))
                         }
@@ -633,9 +744,9 @@ const Dashboard = () => {
                       setProfileForm(
                         profile
                           ? {
-                              phone: profile.phone,
+                              phone: profile.phone ?? "",
                               photoUrl: profile.photoUrl ?? "",
-                              birthDate: profile.birthDate,
+                              birthDate: profile.birthDate ?? "",
                             }
                           : EMPTY_PROFILE_FORM
                       );

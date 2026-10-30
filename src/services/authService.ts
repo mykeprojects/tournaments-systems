@@ -25,12 +25,26 @@ export interface AuthSessionResponse {
   expiresAt: string;
 }
 
+export interface CredentialLoginResponse {
+  requiresTwoFactor: boolean;
+  challengeToken?: string | null;
+  expiresAt?: string | null;
+  accessToken?: string | null;
+  tokenType?: string | null;
+  message?: string | null;
+}
+
+export interface TwoFactorStatus {
+  available: boolean;
+  enabled: boolean;
+}
+
 export const login = async (
   email: string,
   password: string
-): Promise<AuthSessionResponse> => {
+): Promise<CredentialLoginResponse> => {
   try {
-    const response = await apiClient.post<AuthSessionResponse>("/api/auth/login", {
+    const response = await apiClient.post<CredentialLoginResponse>("/api/auth/login", {
       email,
       password,
     });
@@ -39,6 +53,35 @@ export const login = async (
   } catch (error) {
     throw new Error(getAuthErrorMessage(error));
   }
+};
+
+export const verifyTwoFactor = async (
+  challengeToken: string,
+  code: string
+): Promise<AuthSessionResponse> => {
+  try {
+    const response = await apiClient.post<AuthSessionResponse>("/api/auth/2fa/verify", {
+      challengeToken,
+      code,
+    });
+    return response.data;
+  } catch (error) {
+    throw new Error(getAuthErrorMessage(error));
+  }
+};
+
+export const getTwoFactorStatus = async (): Promise<TwoFactorStatus> => {
+  const response = await apiClient.get<TwoFactorStatus>("/api/auth/2fa");
+  return response.data;
+};
+
+export const updateTwoFactorPreference = async (
+  enabled: boolean
+): Promise<TwoFactorStatus> => {
+  const response = await apiClient.put<TwoFactorStatus>("/api/auth/2fa", {
+    enabled,
+  });
+  return response.data;
 };
 
 export const loginWithExternalProvider = async (

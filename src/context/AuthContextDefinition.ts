@@ -6,12 +6,21 @@ export interface AuthenticatedUser {
   id: number;
 }
 
+export type CredentialsLoginResult =
+  | { requiresTwoFactor: false }
+  | { requiresTwoFactor: true; challengeToken: string; expiresAt: string; message?: string };
+
 export interface AuthContextType {
   user: AuthenticatedUser | null;
   loading: boolean;
   isAdmin: boolean | null;
   roleCheckError: string | null;
-  loginWithCredentials: (email: string, password: string) => Promise<void>;
+  loginWithCredentials: (email: string, password: string) => Promise<CredentialsLoginResult>;
+  completeTwoFactorLogin: (
+    challengeToken: string,
+    code: string,
+    email: string
+  ) => Promise<void>;
   loginWithProvider: (provider: AuthProviderType) => Promise<void>;
   refreshAdminStatus: () => Promise<void>;
   logout: () => Promise<void>;
