@@ -26,7 +26,7 @@ const ForbiddenContent = () => {
       <div className="mt-7 flex flex-wrap justify-center gap-3">
         <Link
           to={routePaths.signIn}
-          onClick={logout}
+          onClick={() => void logout()}
           className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-bold text-[#102016] transition hover:bg-lime-300"
         >
           Cerrar sesión

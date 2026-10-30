@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { routePaths } from "../../routes/routePaths";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginWithCredentials } = useAuth();
+  const { loginWithCredentials, loginWithProvider } = useAuth();
 
   const from =
     (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
@@ -35,10 +36,21 @@ const SignIn: React.FC = () => {
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    setLoginError(
-      `El inicio de sesión con ${provider} estará disponible cuando se integre el proveedor externo.`
-    );
+  const handleSocialLogin = async (provider: "google" | "github" | "microsoft") => {
+    setLoginError(null);
+    setIsSubmitting(true);
+    try {
+      await loginWithProvider(provider);
+      navigate(from, { replace: true });
+    } catch (error: unknown) {
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible iniciar sesión con el proveedor externo."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const inputClass =
@@ -54,12 +66,7 @@ const SignIn: React.FC = () => {
         <section className="relative isolate flex min-h-[340px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#173d27] via-[#102a1d] to-[#07110d] px-6 py-8 sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 opacity-20"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(190,242,100,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(190,242,100,.15) 1px, transparent 1px)",
-              backgroundSize: "42px 42px",
-            }}
+            className="absolute inset-0 -z-10 bg-[linear-gradient(rgba(190,242,100,.15)_1px,transparent_1px),linear-gradient(90deg,rgba(190,242,100,.15)_1px,transparent_1px)] bg-[length:42px_42px] opacity-20"
           />
           <div className="absolute -right-24 top-20 -z-10 h-72 w-72 rounded-full bg-lime-400/10 blur-3xl sm:h-96 sm:w-96" />
 
@@ -246,6 +253,22 @@ const SignIn: React.FC = () => {
               )}
             </Formik>
 
+            <p className="mt-5 text-center text-sm text-slate-400">
+              ¿Aún no tienes una cuenta?{" "}
+              <Link
+                to={routePaths.signUp}
+                className="font-bold text-lime-400 underline decoration-lime-400/40 underline-offset-4 transition hover:text-lime-300 hover:decoration-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300/60 focus:ring-offset-2 focus:ring-offset-[#07110d]"
+              >
+                Crear cuenta
+              </Link>
+            </p>
+            <Link
+              to={routePaths.forgotPassword}
+              className="mt-4 block text-center text-sm font-bold text-lime-400 underline decoration-lime-400/40 underline-offset-4 transition hover:text-lime-300"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+
             <div className="my-7 flex items-center gap-4">
               <div className="h-px flex-1 bg-slate-800" />
               <span className="text-xs font-medium text-slate-500">
@@ -258,7 +281,7 @@ const SignIn: React.FC = () => {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => handleSocialLogin("Google")}
+                onClick={() => void handleSocialLogin("google")}
                 className={socialButtonClass}
               >
                 <svg
@@ -289,7 +312,7 @@ const SignIn: React.FC = () => {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => handleSocialLogin("GitHub")}
+                onClick={() => void handleSocialLogin("github")}
                 className={socialButtonClass}
               >
                 <svg
@@ -305,7 +328,7 @@ const SignIn: React.FC = () => {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={() => handleSocialLogin("Microsoft")}
+                onClick={() => void handleSocialLogin("microsoft")}
                 className={socialButtonClass}
               >
                 <span className="grid h-5 w-5 grid-cols-2 gap-0.5">

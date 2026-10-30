@@ -262,7 +262,7 @@ const Dashboard = () => {
     </dl>
   );
 
-  const handleLogout = () => logout();
+  const handleLogout = () => void logout();
   const handleRefreshUsers = () => {
     setListError(null);
     setIsLoadingUsers(true);
