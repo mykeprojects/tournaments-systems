@@ -1,5 +1,5 @@
 import axios from "axios";
-import apiClient from "../infrastructure/http/apiClient";
+import apiClient from "../interceptors/apiClient";
 
 export interface UserSummary {
   id: number;

@@ -2,16 +2,25 @@ import React, { useEffect, useState } from "react";
 import {
   registerUnauthorizedHandler,
   setTokenProvider,
-} from "../infrastructure/http/apiClient";
-import { getUserIdFromToken, isUserAdmin, login } from "../services/authService";
+} from "../interceptors/apiClient";
+import {
+  getUserIdFromToken,
+  isUserAdmin,
+  login,
+  loginWithExternalProvider,
+  logout as logoutFromBackend,
+} from "../services/authService";
+import type { AuthProviderType } from "../domain/auth";
+import {
+  clearAuthCookies,
+  getAuthSessionCookies,
+  getAuthTokenCookie,
+  saveAuthCookies,
+} from "../storage/authCookie";
 import {
   AuthContext,
   type AuthenticatedUser,
 } from "./AuthContextDefinition";
-
-const SESSION_TOKEN_KEY = "security-api-token";
-const SESSION_EXPIRY_KEY = "security-api-token-expiry";
-const SESSION_EMAIL_KEY = "security-api-user-email";
 
 interface StoredSession {
   user: AuthenticatedUser | null;
@@ -19,9 +28,7 @@ interface StoredSession {
 }
 
 const readStoredSession = (): StoredSession => {
-  const token = sessionStorage.getItem(SESSION_TOKEN_KEY);
-  const expiresAtValue = sessionStorage.getItem(SESSION_EXPIRY_KEY);
-  const email = sessionStorage.getItem(SESSION_EMAIL_KEY);
+  const { token, expiresAt: expiresAtValue, email } = getAuthSessionCookies();
   const expiresAt = expiresAtValue ? Date.parse(expiresAtValue) : Number.NaN;
 
   if (!token || !email || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
@@ -39,9 +46,7 @@ const readStoredSession = (): StoredSession => {
 };
 
 const clearStoredSession = (): void => {
-  sessionStorage.removeItem(SESSION_TOKEN_KEY);
-  sessionStorage.removeItem(SESSION_EXPIRY_KEY);
-  sessionStorage.removeItem(SESSION_EMAIL_KEY);
+  clearAuthCookies();
 };
 
 export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -55,7 +60,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [roleCheckError, setRoleCheckError] = useState<string | null>(null);
 
   useEffect(() => {
-    setTokenProvider(async () => sessionStorage.getItem(SESSION_TOKEN_KEY));
+    setTokenProvider(async () => getAuthTokenCookie());
     const unregisterUnauthorizedHandler = registerUnauthorizedHandler(() => {
       clearStoredSession();
       setUser(null);
@@ -114,9 +119,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     const userId = getUserIdFromToken(session.accessToken);
-    sessionStorage.setItem(SESSION_TOKEN_KEY, session.accessToken);
-    sessionStorage.setItem(SESSION_EXPIRY_KEY, session.expiresAt);
-    sessionStorage.setItem(SESSION_EMAIL_KEY, email);
+    saveAuthCookies(session.accessToken, session.expiresAt, email);
     setUser({ email, id: userId });
     setExpiresAt(expirationTime);
     setIsAdmin(null);
@@ -132,6 +135,44 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
           ? error.message
           : "No fue posible verificar si esta cuenta es administradora."
       );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithProvider = async (provider: AuthProviderType): Promise<void> => {
+    const { default: firebaseAuthAdapter } = await import(
+      "../infrastructure/firebase/FirebaseAuthAdapter"
+    );
+    const identity = await firebaseAuthAdapter.loginWithProvider(provider);
+    let session;
+    try {
+      session = await loginWithExternalProvider(provider, identity.idToken);
+    } catch (error) {
+      await firebaseAuthAdapter.logout();
+      throw error;
+    }
+    const expirationTime = Date.parse(session.expiresAt);
+
+    if (!session.accessToken || !Number.isFinite(expirationTime) || expirationTime <= Date.now()) {
+      throw new Error("El backend devolvió una sesión externa inválida o vencida.");
+    }
+
+    const email = identity.user.email;
+    if (!email) {
+      throw new Error("El proveedor externo no devolvió un correo válido.");
+    }
+
+    const userId = getUserIdFromToken(session.accessToken);
+    saveAuthCookies(session.accessToken, session.expiresAt, email);
+    setUser({ email, id: userId });
+    setExpiresAt(expirationTime);
+    setIsAdmin(null);
+    setRoleCheckError(null);
+    setLoading(true);
+
+    try {
+      setIsAdmin(await isUserAdmin(userId));
     } finally {
       setLoading(false);
     }
@@ -159,13 +200,17 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const logout = (): void => {
-    clearStoredSession();
-    setUser(null);
-    setExpiresAt(null);
-    setIsAdmin(null);
-    setRoleCheckError(null);
-    setLoading(false);
+  const logout = async (): Promise<void> => {
+    try {
+      await logoutFromBackend();
+    } finally {
+      clearStoredSession();
+      setUser(null);
+      setExpiresAt(null);
+      setIsAdmin(null);
+      setRoleCheckError(null);
+      setLoading(false);
+    }
   };
 
   const value = {
@@ -174,6 +219,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     isAdmin,
     roleCheckError,
     loginWithCredentials,
+    loginWithProvider,
     refreshAdminStatus,
     logout,
   };

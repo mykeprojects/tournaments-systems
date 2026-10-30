@@ -3,7 +3,7 @@ import axios, {
   type AxiosInstance,
   type InternalAxiosRequestConfig,
 } from "axios";
-import type { SessionStrategyType } from "../../domain/auth/contracts";
+import type { SessionStrategyType } from "../domain/auth/contracts";
 
 export type TokenProvider = () => Promise<string | null>;
 export type UnauthorizedHandler = () => void;
@@ -22,11 +22,6 @@ const resolveBaseURL = (): string => {
   return baseURL.replace(/\/api\/?$/i, "").replace(/\/+$/, "");
 };
 
-const resolveStrategy = (): SessionStrategyType => {
-  const strategyEnv = import.meta.env.VITE_AUTH_STRATEGY?.toLowerCase();
-  return strategyEnv === "cookie" ? "cookie" : "bearer";
-};
-
 /**
  * Cliente HTTP centralizado para comunicación con el backend (Spring Boot u otros).
  *
@@ -42,7 +37,7 @@ export class ApiHttpClient {
   private currentStrategy: SessionStrategyType;
 
   constructor(options: CreateApiClientOptions = {}) {
-    this.currentStrategy = options.strategy || resolveStrategy();
+    this.currentStrategy = options.strategy || "bearer";
 
     this.instance = axios.create({
       baseURL: options.baseURL || resolveBaseURL(),
@@ -83,24 +78,18 @@ export class ApiHttpClient {
     this.instance.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
         const isAuthRequest =
-          config.url?.includes("/auth/") ||
-          config.url?.includes("/session") ||
-          false;
+          config.url?.includes("/auth/login") ||
+          config.url?.includes("/auth/register") ||
+          config.url?.includes("/auth/oauth");
 
-        // Si la estrategia es "cookie" (Alternativa A - Spring Boot), NO se inyecta token Bearer.
-        // El Firebase ID token solo se envía expresamente durante el inicio de sesión.
         if (
           this.currentStrategy === "bearer" &&
           !isAuthRequest &&
           this.tokenProvider
         ) {
-          try {
-            const token = await this.tokenProvider();
-            if (token) {
-              config.headers.set("Authorization", `Bearer ${token}`);
-            }
-          } catch {
-            // Continúa sin token para que el backend determine si la ruta es pública o protegida
+          const token = await this.tokenProvider();
+          if (token) {
+            config.headers.set("Authorization", `Bearer ${token}`);
           }
         }
 

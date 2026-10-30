@@ -1,9 +1,19 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ErrorMessage, Field, Form, Formik } from "formik";
+import * as Yup from "yup";
+import { register } from "../../services/authService";
+import FeedbackModal from "../../components/FeedbackModal";
+import { routePaths } from "../../routes/routePaths";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 const SignUp: React.FC = () => {
+  const navigate = useNavigate();
+  const [feedback, setFeedback] = useState<{
+    variant: "success" | "error";
+    message: string;
+  } | null>(null);
   const inputClass =
     "mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
 
@@ -14,12 +24,7 @@ const SignUp: React.FC = () => {
         <section className="relative isolate flex min-h-[300px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#173d27] via-[#102a1d] to-[#07110d] px-6 py-8 sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 opacity-20"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(190,242,100,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(190,242,100,.15) 1px, transparent 1px)",
-              backgroundSize: "42px 42px",
-            }}
+            className="absolute inset-0 -z-10 bg-[linear-gradient(rgba(190,242,100,.15)_1px,transparent_1px),linear-gradient(90deg,rgba(190,242,100,.15)_1px,transparent_1px)] bg-[length:42px_42px] opacity-20"
           />
           <div className="absolute -right-24 top-20 -z-10 h-72 w-72 rounded-full bg-lime-400/10 blur-3xl sm:h-96 sm:w-96" />
 
@@ -117,7 +122,55 @@ const SignUp: React.FC = () => {
               </p>
             </div>
 
-            <form className="space-y-5">
+            <Formik
+              initialValues={{
+                name: "",
+                email: "",
+                password: "",
+                confirmPassword: "",
+              }}
+              validationSchema={Yup.object({
+                name: Yup.string()
+                  .trim()
+                  .min(2, "El nombre debe tener entre 2 y 100 caracteres")
+                  .max(100, "El nombre debe tener entre 2 y 100 caracteres")
+                  .required("El nombre es obligatorio"),
+                email: Yup.string()
+                  .email("El email no tiene un formato válido")
+                  .required("El email es obligatorio"),
+                password: Yup.string()
+                  .matches(
+                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])\S{8,72}$/,
+                    "Debe tener mayúscula, minúscula, número, carácter especial y no contener espacios"
+                  )
+                  .required("La contraseña es obligatoria"),
+                confirmPassword: Yup.string()
+                  .oneOf([Yup.ref("password")], "Las contraseñas no coinciden")
+                  .required("Confirma tu contraseña"),
+              })}
+              onSubmit={async ({ name, email, password }, { setSubmitting, resetForm }) => {
+                try {
+                  await register({ name, email, password });
+                  resetForm();
+                  setFeedback({
+                    variant: "success",
+                    message: "Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.",
+                  });
+                } catch (error: unknown) {
+                  setFeedback({
+                    variant: "error",
+                    message:
+                      error instanceof Error
+                        ? error.message
+                        : "No fue posible crear la cuenta.",
+                  });
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {({ isSubmitting }) => (
+                <Form className="space-y-5">
               <div>
                 <label
                   htmlFor="name"
@@ -125,7 +178,7 @@ const SignUp: React.FC = () => {
                 >
                   Nombre completo
                 </label>
-                <input
+                <Field
                   id="name"
                   name="name"
                   type="text"
@@ -133,6 +186,7 @@ const SignUp: React.FC = () => {
                   placeholder="Tu nombre completo"
                   className={inputClass}
                 />
+                <ErrorMessage name="name" component="p" className="mt-2 text-xs text-red-300" />
               </div>
 
               <div>
@@ -142,7 +196,7 @@ const SignUp: React.FC = () => {
                 >
                   Correo electrónico
                 </label>
-                <input
+                <Field
                   id="email"
                   name="email"
                   type="email"
@@ -150,6 +204,7 @@ const SignUp: React.FC = () => {
                   placeholder="tu@correo.com"
                   className={inputClass}
                 />
+                <ErrorMessage name="email" component="p" className="mt-2 text-xs text-red-300" />
               </div>
 
               <div>
@@ -159,7 +214,7 @@ const SignUp: React.FC = () => {
                 >
                   Contraseña
                 </label>
-                <input
+                <Field
                   id="password"
                   name="password"
                   type="password"
@@ -167,6 +222,7 @@ const SignUp: React.FC = () => {
                   placeholder="Crea una contraseña"
                   className={inputClass}
                 />
+                <ErrorMessage name="password" component="p" className="mt-2 text-xs text-red-300" />
                 <p className="mt-2 text-xs text-slate-500">
                   Usa una contraseña segura que puedas recordar.
                 </p>
@@ -179,7 +235,7 @@ const SignUp: React.FC = () => {
                 >
                   Confirmar contraseña
                 </label>
-                <input
+                <Field
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
@@ -187,18 +243,21 @@ const SignUp: React.FC = () => {
                   placeholder="Repite tu contraseña"
                   className={inputClass}
                 />
+                <ErrorMessage name="confirmPassword" component="p" className="mt-2 text-xs text-red-300" />
               </div>
 
               <button
                 type="submit"
                 className="group flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3.5 text-sm font-extrabold text-[#102016] shadow-lg shadow-lime-950/20 transition hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300 focus:ring-offset-2 focus:ring-offset-[#07110d]"
               >
-                Crear cuenta
+                {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
                 <span className="transition-transform group-hover:translate-x-1">
                   →
                 </span>
               </button>
-            </form>
+                </Form>
+              )}
+            </Formik>
 
             <div className="my-7 flex items-center gap-4">
               <div className="h-px flex-1 bg-slate-800" />
@@ -222,6 +281,25 @@ const SignUp: React.FC = () => {
           </div>
         </section>
       </div>
+      {feedback && (
+        <FeedbackModal
+          variant={feedback.variant}
+          title={feedback.variant === "success" ? "Registro exitoso" : "No fue posible registrarte"}
+          message={feedback.message}
+          onClose={() => setFeedback(null)}
+          action={
+            feedback.variant === "success" ? (
+              <button
+                type="button"
+                onClick={() => navigate(routePaths.signIn)}
+                className="rounded-xl bg-lime-400 px-4 py-2.5 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300/60"
+              >
+                Ir a iniciar sesión
+              </button>
+            ) : undefined
+          }
+        />
+      )}
     </main>
   );
 };

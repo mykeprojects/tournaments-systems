@@ -13,7 +13,7 @@ import {
   SessionExpiredError,
   UnexpectedAuthError,
 } from "../../domain/auth";
-import apiClient from "../http/apiClient";
+import apiClient from "../../interceptors/apiClient";
 
 export interface AuthBackendEndpoints {
   authEndpoint?: string;

@@ -1,5 +1,8 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import SignIn from "../pages/Authentication/SignIn";
+import SignUp from "../pages/Authentication/SignUp";
+import ForgotPassword from "../pages/Authentication/ForgotPassword";
+import ResetPassword, { SetNewPassword } from "../pages/Authentication/ResetPassword";
 import Dashboard from "../pages/Protected/Dashboard";
 import { AuthGuard } from "./guards";
 import { routePaths } from "./routePaths";
@@ -31,7 +34,19 @@ export const router = createBrowserRouter([
   },
   {
     path: routePaths.signUp,
-    element: <Navigate to={routePaths.signIn} replace />,
+    element: <SignUp />,
+  },
+  {
+    path: routePaths.forgotPassword,
+    element: <ForgotPassword />,
+  },
+  {
+    path: routePaths.recoverVerify,
+    element: <ResetPassword />,
+  },
+  {
+    path: routePaths.resetPassword,
+    element: <SetNewPassword />,
   },
   {
     path: "*",
