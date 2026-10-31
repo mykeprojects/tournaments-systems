@@ -1,6 +1,5 @@
 import axios from "axios";
 import apiClient from "../interceptors/apiClient";
-import { getUserRoleAssignments, getUserWithRoles } from "./userService";
 import type { RegisterUserRequest } from "../models/auth/RegisterUserRequest";
 import type { RegisteredUser } from "../models/auth/RegisteredUser";
 import type { AuthProviderType } from "../domain/auth";
@@ -131,30 +130,6 @@ export const getUserIdFromToken = (token: string): number => {
       throw error;
     }
     throw new Error("No fue posible leer el usuario del token recibido.");
-  }
-};
-
-export const isUserAdmin = async (userId: number): Promise<boolean> => {
-  try {
-    const user = await getUserWithRoles(userId);
-    return user.roles.some((assignment) => assignment.role?.name === "ADMIN");
-  } catch (error) {
-    if (!axios.isAxiosError(error) || error.response?.status !== 403) {
-      throw error;
-    }
-
-    try {
-      const assignments = await getUserRoleAssignments(userId);
-      return assignments.some((assignment) => assignment.role?.name === "ADMIN");
-    } catch (fallbackError) {
-      if (axios.isAxiosError(fallbackError) && fallbackError.response?.status === 403) {
-        throw new Error(
-          "El backend rechazó las dos consultas de roles. Debe permitir detail-with-roles o user-roles/users/{userId} para que el frontend determine si eres admin."
-        );
-      }
-
-      throw fallbackError;
-    }
   }
 };
 

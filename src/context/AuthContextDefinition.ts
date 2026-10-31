@@ -1,5 +1,7 @@
 import { createContext } from "react";
 import type { AuthProviderType } from "../domain/auth";
+import type { Permission } from "../services/roleService";
+import type { PermissionKey } from "../services/authorizationService";
 
 export interface AuthenticatedUser {
   email: string;
@@ -13,8 +15,9 @@ export type CredentialsLoginResult =
 export interface AuthContextType {
   user: AuthenticatedUser | null;
   loading: boolean;
-  isAdmin: boolean | null;
-  roleCheckError: string | null;
+  permissions: Permission[];
+  permissionCheckError: string | null;
+  hasPermission: (permission: PermissionKey) => boolean;
   loginWithCredentials: (email: string, password: string) => Promise<CredentialsLoginResult>;
   completeTwoFactorLogin: (
     challengeToken: string,
@@ -22,7 +25,7 @@ export interface AuthContextType {
     email: string
   ) => Promise<void>;
   loginWithProvider: (provider: AuthProviderType) => Promise<void>;
-  refreshAdminStatus: () => Promise<void>;
+  refreshPermissions: () => Promise<void>;
   logout: () => Promise<void>;
 }
 

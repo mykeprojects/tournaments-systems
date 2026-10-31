@@ -1,6 +1,5 @@
 export type {
   AppProfile,
-  AppRole,
   AppUser,
   AuthProviderType,
   AuthSession,

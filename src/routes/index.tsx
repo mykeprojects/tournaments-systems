@@ -4,6 +4,7 @@ import SignUp from "../pages/Authentication/SignUp";
 import ForgotPassword from "../pages/Authentication/ForgotPassword";
 import ResetPassword, { SetNewPassword } from "../pages/Authentication/ResetPassword";
 import Dashboard from "../pages/Protected/Dashboard";
+import RoleManagement from "../pages/Protected/RoleManagement";
 import { AuthGuard } from "./guards";
 import { routePaths } from "./routePaths";
 
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
       {
         path: routePaths.admin,
         element: <Dashboard />,
+      },
+      {
+        path: routePaths.roles,
+        element: <RoleManagement />,
       },
     ],
   },

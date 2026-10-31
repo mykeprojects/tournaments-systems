@@ -7,7 +7,7 @@ const Forbidden = () => (
 );
 
 const ForbiddenContent = () => {
-  const { user, roleCheckError, logout } = useAuth();
+  const { user, permissionCheckError, logout } = useAuth();
 
   return (
   <main className="flex min-h-screen items-center justify-center bg-[#07110d] px-5 text-white">
@@ -17,10 +17,10 @@ const ForbiddenContent = () => {
       </p>
       <h1 className="mt-4 text-3xl font-black">Acceso no permitido</h1>
       <p className="mt-3 text-sm leading-6 text-slate-400">
-        {roleCheckError
-          ? `No fue posible verificar tus roles: ${roleCheckError}`
+        {permissionCheckError
+          ? `No fue posible consultar tus permisos: ${permissionCheckError}`
           : user
-            ? "Esta sección requiere el rol ADMIN."
+            ? "Tu cuenta no tiene los permisos necesarios para consultar esta sección."
             : "No tienes permisos para consultar esta sección."}
       </p>
       <div className="mt-7 flex flex-wrap justify-center gap-3">

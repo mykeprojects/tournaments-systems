@@ -1,15 +1,23 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { routePaths } from "../../routes/routePaths";
 import {
   createProfile,
   createUser,
+  createUserRole,
+  deleteProfile,
   deleteUser,
   getUserDetail,
   getUserServiceErrorMessage,
+  listRoles,
+  listUserRoleAssignments,
   listUsers,
   updateProfile,
   type Profile,
+  type Role,
   type UserDetail,
+  type UserRoleAssignment,
   type UserSummary,
 } from "../../services/userService";
 import {
@@ -30,13 +38,31 @@ const INPUT_CLASS =
   "mt-2 w-full rounded-xl border border-slate-700 bg-[#0b1711] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
 
 const Dashboard = () => {
-  const { user, logout, isAdmin, roleCheckError, refreshAdminStatus } = useAuth();
+  const {
+    user,
+    logout,
+    hasPermission,
+    permissionCheckError,
+    refreshPermissions,
+  } = useAuth();
+  const canViewUsers = hasPermission("users.view");
+  const canViewUserDetails = hasPermission("users.viewDetails");
+  const canCreateUsers = hasPermission("users.create");
+  const canAssignRoles = hasPermission("users.assignRoles");
+  const canDeleteUsers = hasPermission("users.delete");
+  const canViewRoles = hasPermission("roles.view");
   const [users, setUsers] = useState<UserSummary[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [userRoleAssignments, setUserRoleAssignments] = useState<UserRoleAssignment[]>([]);
+  const [selectedRoleByUser, setSelectedRoleByUser] = useState<Record<number, string>>({});
+  const [isLoadingUsers, setIsLoadingUsers] = useState(canViewUsers);
+  const [isLoadingRoleData, setIsLoadingRoleData] = useState(canAssignRoles);
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+  const [assigningRoleUserId, setAssigningRoleUserId] = useState<number | null>(null);
   const [userForm, setUserForm] = useState(EMPTY_USER_FORM);
   const [listError, setListError] = useState<string | null>(null);
+  const [roleManagementError, setRoleManagementError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
   const [viewedUser, setViewedUser] = useState<UserDetail | null>(null);
@@ -48,6 +74,7 @@ const Dashboard = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [twoFactorStatus, setTwoFactorStatus] = useState<TwoFactorStatus | null>(null);
@@ -68,7 +95,7 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!canViewUsers) {
       return;
     }
 
@@ -93,13 +120,41 @@ const Dashboard = () => {
     };
 
     void loadUsers();
+
+    if (!canAssignRoles) {
+      return () => {
+        active = false;
+      };
+    }
+
+    void Promise.all([listRoles(), listUserRoleAssignments()])
+      .then(([loadedRoles, loadedAssignments]) => {
+        if (active) {
+          setRoles(loadedRoles);
+          setUserRoleAssignments(loadedAssignments);
+          setRoleManagementError(null);
+        }
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setRoleManagementError(
+            getUserServiceErrorMessage(error, "No fue posible cargar los roles.")
+          );
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoadingRoleData(false);
+        }
+      });
+
     return () => {
       active = false;
     };
-  }, [isAdmin]);
+  }, [canAssignRoles, canViewUsers]);
 
   useEffect(() => {
-    if (isAdmin !== false || !user) {
+    if (!user) {
       return;
     }
 
@@ -136,7 +191,7 @@ const Dashboard = () => {
     return () => {
       active = false;
     };
-  }, [isAdmin, user]);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -205,6 +260,7 @@ const Dashboard = () => {
 
   const handleCreateUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canCreateUsers) return;
     setFormError(null);
     setSuccessMessage(null);
     setIsSubmittingUser(true);
@@ -231,6 +287,7 @@ const Dashboard = () => {
   };
 
   const handleDeleteUser = async (targetUser: UserSummary) => {
+    if (!canDeleteUsers) return;
     if (targetUser.id === user?.id) {
       setListError("No puedes eliminar la cuenta con la que iniciaste sesión.");
       return;
@@ -257,7 +314,46 @@ const Dashboard = () => {
     }
   };
 
+  const handleAssignRole = async (targetUser: UserSummary) => {
+    if (!canAssignRoles) return;
+    const roleId = Number(selectedRoleByUser[targetUser.id]);
+    if (!Number.isSafeInteger(roleId) || roleId <= 0) {
+      setRoleManagementError("Selecciona un rol válido para asignar.");
+      return;
+    }
+
+    const alreadyAssigned = userRoleAssignments.some(
+      (assignment) =>
+        assignment.userId === targetUser.id && assignment.role.id === roleId
+    );
+    if (alreadyAssigned) {
+      setRoleManagementError("El usuario ya tiene asignado ese rol.");
+      return;
+    }
+
+    setAssigningRoleUserId(targetUser.id);
+    setRoleManagementError(null);
+    setSuccessMessage(null);
+
+    try {
+      const assignment = await createUserRole({
+        userId: targetUser.id,
+        roleId,
+      });
+      setUserRoleAssignments((current) => [...current, assignment]);
+      setSelectedRoleByUser((current) => ({ ...current, [targetUser.id]: "" }));
+      setSuccessMessage(`El rol ${assignment.role.name} se asignó a ${targetUser.name}.`);
+    } catch (error) {
+      setRoleManagementError(
+        getUserServiceErrorMessage(error, "No fue posible asignar el rol.")
+      );
+    } finally {
+      setAssigningRoleUserId(null);
+    }
+  };
+
   const handleViewProfile = async (targetUser: UserSummary) => {
+    if (!canViewUserDetails) return;
     setViewedUser(null);
     setViewingUserId(targetUser.id);
     setProfileViewError(null);
@@ -309,6 +405,34 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteOwnProfile = async () => {
+    if (!user || !profile) {
+      return;
+    }
+
+    if (!window.confirm("¿Seguro que deseas eliminar tu perfil? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    setIsDeletingProfile(true);
+    setProfileError(null);
+    setSuccessMessage(null);
+
+    try {
+      await deleteProfile(user.id);
+      setProfile(null);
+      setProfileForm(EMPTY_PROFILE_FORM);
+      setIsEditingProfile(false);
+      setSuccessMessage("Tu perfil se eliminó correctamente.");
+    } catch (error) {
+      setProfileError(
+        getUserServiceErrorMessage(error, "No fue posible eliminar tu perfil.")
+      );
+    } finally {
+      setIsDeletingProfile(false);
+    }
+  };
+
   const renderProfileDetails = (details: Profile | null) => (
     <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
       <div>
@@ -338,9 +462,171 @@ const Dashboard = () => {
 
   const handleLogout = () => void logout();
   const handleRefreshUsers = () => {
+    if (!canViewUsers) return;
     setListError(null);
     setIsLoadingUsers(true);
     void refreshUsers();
+    if (!canAssignRoles) return;
+    setIsLoadingRoleData(true);
+    void Promise.all([listRoles(), listUserRoleAssignments()])
+      .then(([loadedRoles, loadedAssignments]) => {
+        setRoles(loadedRoles);
+        setUserRoleAssignments(loadedAssignments);
+        setRoleManagementError(null);
+      })
+      .catch((error: unknown) => {
+        setRoleManagementError(
+          getUserServiceErrorMessage(error, "No fue posible actualizar los roles.")
+        );
+      })
+      .finally(() => setIsLoadingRoleData(false));
+  };
+
+  const renderOwnProfileSection = () => {
+    return (
+      <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div>
+            <h2 className="text-xl font-bold">Datos de la cuenta</h2>
+            <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-slate-500">Nombre</dt>
+                <dd className="mt-1 text-slate-200">
+                  {accountDetails?.name || (isLoadingProfile ? "Cargando..." : "No disponible")}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500">Correo electrónico</dt>
+                <dd className="mt-1 text-slate-200">{user?.email}</dd>
+              </div>
+            </dl>
+          </div>
+          {!isEditingProfile && (
+            <button
+              type="button"
+              onClick={() => {
+                setProfileError(null);
+                setSuccessMessage(null);
+                setIsEditingProfile(true);
+              }}
+              disabled={isLoadingProfile || Boolean(profileError)}
+              className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016]"
+            >
+              {profile ? "Editar perfil" : "Crear perfil"}
+            </button>
+          )}
+        </div>
+
+        {successMessage && (
+          <p role="status" className="mt-5 rounded-xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-200">
+            {successMessage}
+          </p>
+        )}
+        {profileError && <p role="alert" className="mt-5 text-sm text-red-300">{profileError}</p>}
+        {isLoadingProfile ? (
+          <p className="mt-6 text-sm text-slate-400">Cargando perfil...</p>
+        ) : profileError ? null : isEditingProfile ? (
+          <form onSubmit={(event) => void handleSaveProfile(event)} className="mt-6">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label htmlFor="profile-phone" className="text-sm font-semibold text-slate-200">
+                  Teléfono
+                </label>
+                <input
+                  id="profile-phone"
+                  type="tel"
+                  required
+                  maxLength={30}
+                  value={profileForm.phone ?? ""}
+                  onChange={(event) =>
+                    setProfileForm((current) => ({ ...current, phone: event.target.value }))
+                  }
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label htmlFor="profile-photo" className="text-sm font-semibold text-slate-200">
+                  URL de la foto de perfil
+                </label>
+                <input
+                  id="profile-photo"
+                  type="url"
+                  maxLength={2048}
+                  value={profileForm.photoUrl ?? ""}
+                  onChange={(event) =>
+                    setProfileForm((current) => ({ ...current, photoUrl: event.target.value }))
+                  }
+                  className={INPUT_CLASS}
+                />
+              </div>
+              {!profile && (
+                <div>
+                  <label htmlFor="profile-birth-date" className="text-sm font-semibold text-slate-200">
+                    Fecha de nacimiento
+                  </label>
+                  <input
+                    id="profile-birth-date"
+                    type="date"
+                    required
+                    max={LATEST_BIRTH_DATE}
+                    value={profileForm.birthDate ?? ""}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({ ...current, birthDate: event.target.value }))
+                    }
+                    className={INPUT_CLASS}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditingProfile(false);
+                  setProfileForm(
+                    profile
+                      ? {
+                          phone: profile.phone ?? "",
+                          photoUrl: profile.photoUrl ?? "",
+                          birthDate: profile.birthDate ?? "",
+                        }
+                      : EMPTY_PROFILE_FORM
+                  );
+                }}
+                className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingProfile}
+                className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] disabled:opacity-60"
+              >
+                {isSavingProfile ? "Guardando..." : "Guardar perfil"}
+              </button>
+            </div>
+          </form>
+        ) : profile ? (
+          <>
+            {renderProfileDetails(profile)}
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => void handleDeleteOwnProfile()}
+                disabled={isDeletingProfile}
+                className="rounded-xl border border-red-500/30 px-5 py-3 text-sm font-semibold text-red-300 disabled:opacity-60"
+              >
+                {isDeletingProfile ? "Eliminando..." : "Eliminar perfil"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <p className="mt-6 text-sm text-slate-400">
+            Aún no tienes un perfil. Usa “Crear perfil” para añadir tus datos.
+          </p>
+        )}
+      </section>
+    );
   };
 
   return (
@@ -356,7 +642,7 @@ const Dashboard = () => {
                 Sports System<span className="text-lime-400">+</span>
               </p>
               <p className="text-xs text-slate-500">
-                {isAdmin ? "Administración" : "Mi cuenta"}
+                {canViewUsers ? "Administración" : "Mi cuenta"}
               </p>
             </div>
           </div>
@@ -379,14 +665,16 @@ const Dashboard = () => {
             Panel de control
           </p>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            {isAdmin ? "Gestión de usuarios" : "Mi perfil"}
+            {canViewUsers ? "Gestión de usuarios" : "Mi perfil"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            {isAdmin
+            {canViewUsers
               ? "Consulta las cuentas registradas y administra sus perfiles."
               : "Consulta tus datos y actualiza tu teléfono y foto de perfil."}
           </p>
         </div>
+
+        {renderOwnProfileSection()}
 
         {twoFactorStatus?.available && (
           <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
@@ -425,36 +713,44 @@ const Dashboard = () => {
           </section>
         )}
 
-        {roleCheckError ? (
+        {permissionCheckError ? (
           <section className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
             <p role="alert" className="text-sm text-red-300">
-              No fue posible verificar si tu cuenta es administradora: {roleCheckError}
+              No fue posible consultar los permisos de tu cuenta: {permissionCheckError}
             </p>
             <button
               type="button"
-              onClick={() => void refreshAdminStatus()}
+              onClick={() => void refreshPermissions()}
               className="mt-4 rounded-lg border border-red-400/40 px-4 py-2 text-sm font-semibold text-red-200"
             >
               Reintentar
             </button>
           </section>
-        ) : isAdmin === null ? (
-          <p className="text-sm text-slate-400">Verificando permisos...</p>
-        ) : isAdmin ? (
+        ) : canViewUsers || canCreateUsers || canViewRoles ? (
           <>
-            <div className="mb-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCreatingUser((open) => !open);
-                  setFormError(null);
-                  setSuccessMessage(null);
-                }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300"
-              >
-                <span aria-hidden="true" className="text-lg leading-none">+</span>
-                {isCreatingUser ? "Cancelar" : "Crear usuario"}
-              </button>
+            <div className="mb-6 flex flex-wrap justify-end gap-3">
+              {canViewRoles && (
+                <Link
+                  to={routePaths.roles}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-bold text-slate-200 transition hover:border-lime-400/40 hover:text-lime-200"
+                >
+                  Ver roles
+                </Link>
+              )}
+              {canCreateUsers && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingUser((open) => !open);
+                    setFormError(null);
+                    setSuccessMessage(null);
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300"
+                >
+                  <span aria-hidden="true" className="text-lg leading-none">+</span>
+                  {isCreatingUser ? "Cancelar" : "Crear usuario"}
+                </button>
+              )}
             </div>
 
             {successMessage && (
@@ -462,8 +758,13 @@ const Dashboard = () => {
                 {successMessage}
               </p>
             )}
+            {roleManagementError && (
+              <p role="alert" className="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {roleManagementError}
+              </p>
+            )}
 
-            {isCreatingUser && (
+            {isCreatingUser && canCreateUsers && (
               <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
                 <h2 className="text-xl font-bold">Nuevo usuario</h2>
                 {formError && (
@@ -539,7 +840,7 @@ const Dashboard = () => {
               </section>
             )}
 
-            <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1711]">
+            {canViewUsers && <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1711]">
               <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-5 py-5 sm:px-7">
                 <div>
                   <h2 className="font-bold">Usuarios registrados</h2>
@@ -565,12 +866,15 @@ const Dashboard = () => {
                 </p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-sm">
+                  <table className="w-full min-w-[1080px] text-left text-sm">
                     <thead className="bg-white/[0.02] text-xs uppercase tracking-wider text-slate-500">
                       <tr>
                         <th scope="col" className="px-6 py-4 font-semibold">ID</th>
                         <th scope="col" className="px-6 py-4 font-semibold">Nombre</th>
                         <th scope="col" className="px-6 py-4 font-semibold">Correo electrónico</th>
+                        {canAssignRoles && (
+                          <th scope="col" className="px-6 py-4 font-semibold">Roles</th>
+                        )}
                         <th scope="col" className="px-6 py-4 font-semibold">Acciones</th>
                       </tr>
                     </thead>
@@ -580,25 +884,89 @@ const Dashboard = () => {
                           <td className="px-6 py-4 text-slate-500">{listedUser.id}</td>
                           <td className="px-6 py-4 font-semibold text-slate-200">{listedUser.name}</td>
                           <td className="px-6 py-4 text-slate-400">{listedUser.email}</td>
+                          {canAssignRoles && <td className="px-6 py-4">
+                            <div className="mb-3 flex flex-wrap gap-2">
+                              {userRoleAssignments
+                                .filter((assignment) => assignment.userId === listedUser.id)
+                                .map((assignment) => (
+                                  <span
+                                    key={assignment.id}
+                                    className="rounded-full border border-lime-400/20 bg-lime-400/10 px-2.5 py-1 text-xs text-lime-200"
+                                  >
+                                    {assignment.role.name}
+                                  </span>
+                                ))}
+                              {!isLoadingRoleData &&
+                                !userRoleAssignments.some(
+                                  (assignment) => assignment.userId === listedUser.id
+                                ) && (
+                                  <span className="text-xs text-slate-500">Sin roles</span>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <select
+                                aria-label={`Rol para ${listedUser.name}`}
+                                value={selectedRoleByUser[listedUser.id] ?? ""}
+                                onChange={(event) =>
+                                  setSelectedRoleByUser((current) => ({
+                                    ...current,
+                                    [listedUser.id]: event.target.value,
+                                  }))
+                                }
+                                disabled={isLoadingRoleData || roles.length === 0}
+                                className="min-w-36 rounded-lg border border-slate-700 bg-[#0b1711] px-3 py-2 text-xs text-white disabled:opacity-50"
+                              >
+                                <option value="">
+                                  {isLoadingRoleData ? "Cargando roles..." : "Asignar rol"}
+                                </option>
+                                {roles
+                                  .filter(
+                                    (role) =>
+                                      !userRoleAssignments.some(
+                                        (assignment) =>
+                                          assignment.userId === listedUser.id &&
+                                          assignment.role.id === role.id
+                                      )
+                                  )
+                                  .map((role) => (
+                                    <option key={role.id} value={role.id}>
+                                      {role.name}
+                                    </option>
+                                  ))}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => void handleAssignRole(listedUser)}
+                                disabled={
+                                  isLoadingRoleData ||
+                                  assigningRoleUserId === listedUser.id ||
+                                  !selectedRoleByUser[listedUser.id]
+                                }
+                                className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                {assigningRoleUserId === listedUser.id ? "Asignando..." : "Asignar"}
+                              </button>
+                            </div>
+                          </td>}
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
-                              <button
+                              {canViewUserDetails && <button
                                 type="button"
                                 onClick={() => void handleViewProfile(listedUser)}
                                 disabled={viewingUserId === listedUser.id}
                                 className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 disabled:opacity-50"
                               >
                                 {viewingUserId === listedUser.id ? "Cargando..." : "Ver perfil"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleDeleteUser(listedUser)}
-                                disabled={updatingUserId === listedUser.id || listedUser.id === user?.id}
-                                title={listedUser.id === user?.id ? "No puedes eliminar tu propia cuenta" : "Eliminar usuario"}
-                                className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
-                              >
-                                {updatingUserId === listedUser.id ? "Eliminando..." : "Eliminar"}
-                              </button>
+                              </button>}
+                              {canDeleteUsers && <button
+                                  type="button"
+                                  onClick={() => void handleDeleteUser(listedUser)}
+                                  disabled={updatingUserId === listedUser.id || listedUser.id === user?.id}
+                                  title={listedUser.id === user?.id ? "No puedes eliminar tu propia cuenta" : "Eliminar usuario"}
+                                  className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {updatingUserId === listedUser.id ? "Eliminando..." : "Eliminar"}
+                                </button>}
                             </div>
                           </td>
                         </tr>
@@ -607,9 +975,9 @@ const Dashboard = () => {
                   </table>
                 </div>
               )}
-            </section>
+            </section>}
 
-            {(viewedUser || profileViewError) && (
+            {canViewUsers && (viewedUser || profileViewError) && (
               <section className="mt-6 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -641,138 +1009,7 @@ const Dashboard = () => {
               </section>
             )}
           </>
-        ) : (
-          <section className="rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-              <div>
-                <h2 className="text-xl font-bold">Datos de la cuenta</h2>
-                <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="text-slate-500">Nombre</dt>
-                    <dd className="mt-1 text-slate-200">
-                      {accountDetails?.name || (isLoadingProfile ? "Cargando..." : "No disponible")}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-slate-500">Correo electrónico</dt>
-                    <dd className="mt-1 text-slate-200">{user?.email}</dd>
-                  </div>
-                </dl>
-              </div>
-              {!isEditingProfile && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfileError(null);
-                    setSuccessMessage(null);
-                    setIsEditingProfile(true);
-                  }}
-                  disabled={isLoadingProfile || Boolean(profileError)}
-                  className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016]"
-                >
-                  Editar perfil
-                </button>
-              )}
-            </div>
-
-            {successMessage && (
-              <p role="status" className="mt-5 rounded-xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-200">
-                {successMessage}
-              </p>
-            )}
-            {profileError && <p role="alert" className="mt-5 text-sm text-red-300">{profileError}</p>}
-            {isLoadingProfile ? (
-              <p className="mt-6 text-sm text-slate-400">Cargando perfil...</p>
-            ) : profileError ? null : isEditingProfile ? (
-              <form onSubmit={(event) => void handleSaveProfile(event)} className="mt-6">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="profile-phone" className="text-sm font-semibold text-slate-200">
-                      Teléfono
-                    </label>
-                    <input
-                      id="profile-phone"
-                      type="tel"
-                      required
-                      maxLength={30}
-                      value={profileForm.phone ?? ""}
-                      onChange={(event) =>
-                        setProfileForm((current) => ({ ...current, phone: event.target.value }))
-                      }
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="profile-photo" className="text-sm font-semibold text-slate-200">
-                      URL de la foto de perfil
-                    </label>
-                    <input
-                      id="profile-photo"
-                      type="url"
-                      maxLength={2048}
-                      value={profileForm.photoUrl ?? ""}
-                      onChange={(event) =>
-                        setProfileForm((current) => ({ ...current, photoUrl: event.target.value }))
-                      }
-                      className={INPUT_CLASS}
-                    />
-                  </div>
-                  {!profile && (
-                    <div>
-                      <label htmlFor="profile-birth-date" className="text-sm font-semibold text-slate-200">
-                        Fecha de nacimiento
-                      </label>
-                      <input
-                        id="profile-birth-date"
-                        type="date"
-                        required
-                        max={LATEST_BIRTH_DATE}
-                        value={profileForm.birthDate ?? ""}
-                        onChange={(event) =>
-                          setProfileForm((current) => ({ ...current, birthDate: event.target.value }))
-                        }
-                        className={INPUT_CLASS}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditingProfile(false);
-                      setProfileForm(
-                        profile
-                          ? {
-                              phone: profile.phone ?? "",
-                              photoUrl: profile.photoUrl ?? "",
-                              birthDate: profile.birthDate ?? "",
-                            }
-                          : EMPTY_PROFILE_FORM
-                      );
-                    }}
-                    className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingProfile}
-                    className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] disabled:opacity-60"
-                  >
-                    {isSavingProfile ? "Guardando..." : "Guardar perfil"}
-                  </button>
-                </div>
-              </form>
-            ) : profile ? (
-              renderProfileDetails(profile)
-            ) : (
-              <p className="mt-6 text-sm text-slate-400">
-                Aún no tienes un perfil. Usa “Editar perfil” para añadir tus datos.
-              </p>
-            )}
-          </section>
-        )}
+        ) : null}
       </div>
     </main>
   );

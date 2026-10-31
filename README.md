@@ -16,8 +16,10 @@ de torneos.
    configura, el frontend usa `http://localhost:8181`.
 3. Instala dependencias con `npm install` y ejecuta `npm run dev`.
 
-El backend debe permitir el origen local del frontend en su configuración de
-CORS.
+El backend debe incluir el origen del frontend en
+`security.cors.allowed-origin-patterns`. Para Vite local usa
+`http://localhost:5173`; puedes configurar otros orígenes con
+`SECURITY_CORS_ALLOWED_ORIGINS` en el backend.
 
 ## Acceso y gestión de usuarios
 

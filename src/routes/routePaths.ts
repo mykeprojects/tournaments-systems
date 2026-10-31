@@ -7,5 +7,6 @@ export const routePaths = {
   resetPassword: "/auth/recover/reset",
   dashboard: "/dashboard",
   admin: "/admin",
+  roles: "/admin/roles",
   forbidden: "/forbidden",
 } as const;

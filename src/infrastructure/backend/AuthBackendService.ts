@@ -1,7 +1,6 @@
 import type { AxiosError, AxiosInstance } from "axios";
 import type {
   AppProfile,
-  AppRole,
   AppUser,
   AuthSessionResponseDTO,
   IAuthBackendService,
@@ -20,12 +19,6 @@ export interface AuthBackendEndpoints {
   sessionEndpoint?: string;
   logoutEndpoint?: string;
 }
-
-const VALID_ROLES: AppRole[] = ["TEACHER", "STUDENT", "ADMIN"];
-
-const isValidAppRole = (role: unknown): role is AppRole => {
-  return typeof role === "string" && VALID_ROLES.includes(role as AppRole);
-};
 
 export const validateAndTransformSessionDTO = (data: unknown): AuthSessionResponseDTO => {
   if (!data || typeof data !== "object") {
@@ -47,12 +40,6 @@ export const validateAndTransformSessionDTO = (data: unknown): AuthSessionRespon
     throw new InvalidServerResponseError("El usuario retornado por el backend no contiene un 'email' válido.");
   }
 
-  if (!isValidAppRole(rawUser.role)) {
-    throw new InvalidServerResponseError(
-      `El rol "${String(rawUser.role)}" proporcionado por el backend no es válido. Roles válidos: ${VALID_ROLES.join(", ")}`
-    );
-  }
-
   let profile: AppProfile | undefined = undefined;
   if (rawUser.profile && typeof rawUser.profile === "object") {
     const rawProfile = rawUser.profile as Record<string, unknown>;
@@ -71,7 +58,7 @@ export const validateAndTransformSessionDTO = (data: unknown): AuthSessionRespon
   const user: AppUser = {
     id: rawUser.id,
     email: rawUser.email,
-    role: rawUser.role,
+    role: typeof rawUser.role === "string" ? rawUser.role : undefined,
     code: typeof rawUser.code === "string" ? rawUser.code : undefined,
     profile,
   };

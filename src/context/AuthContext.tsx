@@ -5,21 +5,26 @@ import {
 } from "../interceptors/apiClient";
 import {
   getUserIdFromToken,
-  isUserAdmin,
   login,
   loginWithExternalProvider,
   logout as logoutFromBackend,
   verifyTwoFactor,
   type AuthSessionResponse,
 } from "../services/authService";
+import {
+  hasPermission as checkPermission,
+  listCurrentUserPermissions,
+  type PermissionKey,
+} from "../services/authorizationService";
+import type { Permission } from "../services/roleService";
 import type { CredentialsLoginResult } from "./AuthContextDefinition";
 import type { AuthProviderType } from "../domain/auth";
 import {
-  clearAuthCookies,
-  getAuthSessionCookies,
-  getAuthTokenCookie,
-  saveAuthCookies,
-} from "../storage/authCookie";
+  clearAuthSession,
+  getAuthSession,
+  getAuthToken,
+  saveAuthSession,
+} from "../storage/authSession";
 import {
   AuthContext,
   type AuthenticatedUser,
@@ -31,25 +36,31 @@ interface StoredSession {
 }
 
 const readStoredSession = (): StoredSession => {
-  const { token, expiresAt: expiresAtValue, email } = getAuthSessionCookies();
-  const expiresAt = expiresAtValue ? Date.parse(expiresAtValue) : Number.NaN;
+  const session = getAuthSession();
+  if (!session) {
+    return { user: null, expiresAt: null };
+  }
 
-  if (!token || !email || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+  const expiresAt = Date.parse(session.expiresAt);
+
+  if (!session.token || !session.email || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    clearAuthSession();
     return { user: null, expiresAt: null };
   }
 
   try {
     return {
-      user: { email, id: getUserIdFromToken(token) },
+      user: { email: session.email, id: getUserIdFromToken(session.token) },
       expiresAt,
     };
   } catch {
+    clearAuthSession();
     return { user: null, expiresAt: null };
   }
 };
 
 const clearStoredSession = (): void => {
-  clearAuthCookies();
+  clearAuthSession();
 };
 
 export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -59,33 +70,33 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState(storedSession.user);
   const [expiresAt, setExpiresAt] = useState(storedSession.expiresAt);
   const [loading, setLoading] = useState(Boolean(storedSession.user));
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [roleCheckError, setRoleCheckError] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [permissionCheckError, setPermissionCheckError] = useState<string | null>(null);
 
   useEffect(() => {
-    setTokenProvider(async () => getAuthTokenCookie());
+    setTokenProvider(async () => getAuthToken());
     const unregisterUnauthorizedHandler = registerUnauthorizedHandler(() => {
       clearStoredSession();
       setUser(null);
       setExpiresAt(null);
-      setIsAdmin(null);
-      setRoleCheckError(null);
+      setPermissions([]);
+      setPermissionCheckError(null);
     });
 
     if (!storedSession.user) {
       clearStoredSession();
     } else {
-      void isUserAdmin(storedSession.user.id)
-        .then((adminStatus) => {
-          setIsAdmin(adminStatus);
-          setRoleCheckError(null);
+      void listCurrentUserPermissions(storedSession.user.id)
+        .then((loadedPermissions) => {
+          setPermissions(loadedPermissions);
+          setPermissionCheckError(null);
         })
         .catch((error: unknown) => {
-          setIsAdmin(null);
-          setRoleCheckError(
+          setPermissions([]);
+          setPermissionCheckError(
             error instanceof Error
               ? error.message
-              : "No fue posible verificar si esta cuenta es administradora."
+              : "No fue posible consultar los permisos de esta cuenta."
           );
         })
         .finally(() => setLoading(false));
@@ -106,8 +117,8 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       clearStoredSession();
       setUser(null);
       setExpiresAt(null);
-      setIsAdmin(null);
-      setRoleCheckError(null);
+      setPermissions([]);
+      setPermissionCheckError(null);
     }, Math.max(0, expiresAt - Date.now()));
 
     return () => window.clearTimeout(timeout);
@@ -124,21 +135,20 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     const userId = getUserIdFromToken(session.accessToken);
-    saveAuthCookies(session.accessToken, session.expiresAt, email);
+    saveAuthSession(session.accessToken, session.expiresAt, email);
     setUser({ email, id: userId });
     setExpiresAt(expirationTime);
-    setIsAdmin(null);
-    setRoleCheckError(null);
+    setPermissions([]);
+    setPermissionCheckError(null);
     setLoading(true);
 
     try {
-      setIsAdmin(await isUserAdmin(userId));
+      setPermissions(await listCurrentUserPermissions(userId));
     } catch (error) {
-      setIsAdmin(null);
-      setRoleCheckError(
+      setPermissionCheckError(
         error instanceof Error
           ? error.message
-          : "No fue posible verificar si esta cuenta es administradora."
+          : "No fue posible consultar los permisos de esta cuenta."
       );
     } finally {
       setLoading(false);
@@ -200,48 +210,30 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       await firebaseAuthAdapter.logout();
       throw error;
     }
-    const expirationTime = Date.parse(session.expiresAt);
-
-    if (!session.accessToken || !Number.isFinite(expirationTime) || expirationTime <= Date.now()) {
-      throw new Error("El backend devolvió una sesión externa inválida o vencida.");
-    }
-
     const email = identity.user.email;
     if (!email) {
       throw new Error("El proveedor externo no devolvió un correo válido.");
     }
 
-    const userId = getUserIdFromToken(session.accessToken);
-    saveAuthCookies(session.accessToken, session.expiresAt, email);
-    setUser({ email, id: userId });
-    setExpiresAt(expirationTime);
-    setIsAdmin(null);
-    setRoleCheckError(null);
-    setLoading(true);
-
-    try {
-      setIsAdmin(await isUserAdmin(userId));
-    } finally {
-      setLoading(false);
-    }
+    await applyAuthenticatedSession(session, email);
   };
 
-  const refreshAdminStatus = async (): Promise<void> => {
+  const refreshPermissions = async (): Promise<void> => {
     if (!user) {
       return;
     }
 
     setLoading(true);
-    setRoleCheckError(null);
+    setPermissionCheckError(null);
 
     try {
-      setIsAdmin(await isUserAdmin(user.id));
+      setPermissions(await listCurrentUserPermissions(user.id));
     } catch (error) {
-      setIsAdmin(null);
-      setRoleCheckError(
+      setPermissions([]);
+      setPermissionCheckError(
         error instanceof Error
           ? error.message
-          : "No fue posible verificar si esta cuenta es administradora."
+          : "No fue posible consultar los permisos de esta cuenta."
       );
     } finally {
       setLoading(false);
@@ -255,21 +247,25 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       clearStoredSession();
       setUser(null);
       setExpiresAt(null);
-      setIsAdmin(null);
-      setRoleCheckError(null);
+      setPermissions([]);
+      setPermissionCheckError(null);
       setLoading(false);
     }
   };
 
+  const hasPermission = (permission: PermissionKey): boolean =>
+    checkPermission(permissions, permission);
+
   const value = {
     user,
     loading,
-    isAdmin,
-    roleCheckError,
+    permissions,
+    permissionCheckError,
+    hasPermission,
     loginWithCredentials,
     completeTwoFactorLogin,
     loginWithProvider,
-    refreshAdminStatus,
+    refreshPermissions,
     logout,
   };
 

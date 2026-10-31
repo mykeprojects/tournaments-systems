@@ -1,11 +1,3 @@
-export type AppRole =
-  | "ADMIN"
-  | "CONSULTOR"
-  | "TEACHER"
-  | "STUDENT"
-  | "USER"
-  | "EDITOR";
-
 export interface AppProfile {
   id: string;
   first_name: string;
@@ -17,7 +9,7 @@ export interface AppProfile {
 export interface AppUser {
   id: string | number;
   email: string;
-  role: AppRole;
+  role?: string;
   code?: string;
   profile?: AppProfile;
   name?: string;

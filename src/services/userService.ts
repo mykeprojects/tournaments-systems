@@ -14,15 +14,24 @@ export interface CreateUserRequest {
 }
 
 export interface UserWithRoles extends UserSummary {
-  roles: Array<{
-    id: number;
-    userId: number;
-    role: {
-      id: number;
-      name: string;
-      description: string;
-    };
-  }>;
+  roles: UserRoleAssignment[];
+}
+
+export interface Role {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface UserRoleAssignment {
+  id: number;
+  userId: number;
+  role: Role;
+}
+
+export interface CreateUserRoleRequest {
+  userId: number;
+  roleId: number;
 }
 
 export interface Profile {
@@ -51,9 +60,29 @@ export const getUserWithRoles = async (userId: number): Promise<UserWithRoles> =
 
 export const getUserRoleAssignments = async (
   userId: number
-): Promise<UserWithRoles["roles"]> => {
-  const response = await apiClient.get<UserWithRoles["roles"]>(
+): Promise<UserRoleAssignment[]> => {
+  const response = await apiClient.get<UserRoleAssignment[]>(
     `/api/user-roles/users/${userId}`
+  );
+  return response.data;
+};
+
+export const listRoles = async (): Promise<Role[]> => {
+  const response = await apiClient.get<Role[]>("/api/roles");
+  return response.data;
+};
+
+export const listUserRoleAssignments = async (): Promise<UserRoleAssignment[]> => {
+  const response = await apiClient.get<UserRoleAssignment[]>("/api/user-roles");
+  return response.data;
+};
+
+export const createUserRole = async (
+  assignment: CreateUserRoleRequest
+): Promise<UserRoleAssignment> => {
+  const response = await apiClient.post<UserRoleAssignment>(
+    "/api/user-roles",
+    assignment
   );
   return response.data;
 };
@@ -88,6 +117,10 @@ export const updateProfile = async (
     profile
   );
   return response.data;
+};
+
+export const deleteProfile = async (userId: number): Promise<void> => {
+  await apiClient.delete(`/api/users/${userId}/profile`);
 };
 
 export const createUser = async (
