@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import UserDirectory from "../../components/admin/UserDirectory";
+import ProfileFieldsForm from "../../components/profile/ProfileFieldsForm";
 import UserAuthorizationPanel from "../../components/profile/UserAuthorizationPanel";
 import {
   isValidPhoneNumber,
-  PHONE_DIGIT_COUNT,
   PHONE_NUMBER_MESSAGE,
   sanitizePhoneNumber,
 } from "../../domain/profile/phoneNumber";
+import { isAdministratorRole } from "../../services/roleService";
 import { useAuth } from "../../hooks/useAuth";
 import { routePaths } from "../../routes/routePaths";
 import {
@@ -16,6 +17,7 @@ import {
   createUserRole,
   deleteProfile,
   deleteUser,
+  deleteUserRole,
   getUserDetail,
   getUserServiceErrorMessage,
   listRoles,
@@ -68,6 +70,7 @@ const Dashboard = () => {
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
   const [assigningRoleUserId, setAssigningRoleUserId] = useState<number | null>(null);
+  const [removingRoleAssignmentId, setRemovingRoleAssignmentId] = useState<number | null>(null);
   const [userForm, setUserForm] = useState(EMPTY_USER_FORM);
   const [listError, setListError] = useState<string | null>(null);
   const [roleManagementError, setRoleManagementError] = useState<string | null>(null);
@@ -364,6 +367,48 @@ const Dashboard = () => {
     }
   };
 
+  const handleRemoveRole = async (
+    targetUser: UserSummary,
+    assignment: UserRoleAssignment
+  ) => {
+    if (!canAssignRoles) return;
+    if (targetUser.id === user?.id && isAdministratorRole(assignment.role)) {
+      setRoleManagementError("No puedes quitarte el rol ADMIN.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `¿Seguro que deseas quitar el rol ${assignment.role.name} de ${targetUser.name}?`
+      )
+    ) {
+      return;
+    }
+
+    setRemovingRoleAssignmentId(assignment.id);
+    setRoleManagementError(null);
+    setSuccessMessage(null);
+
+    try {
+      await deleteUserRole(targetUser.id, assignment.role.id);
+      setUserRoleAssignments((current) =>
+        current.filter((currentAssignment) => currentAssignment.id !== assignment.id)
+      );
+      if (viewedUser?.id === targetUser.id) {
+        setViewedUser(await getUserDetail(targetUser.id));
+      }
+      setSuccessMessage(
+        `Se quitó el rol ${assignment.role.name} de ${targetUser.name}.`
+      );
+    } catch (error) {
+      setRoleManagementError(
+        getUserServiceErrorMessage(error, "No fue posible quitar el rol.")
+      );
+    } finally {
+      setRemovingRoleAssignmentId(null);
+    }
+  };
+
   const handleViewProfile = async (targetUser: UserSummary) => {
     if (!canViewUserDetails) return;
     setViewedUser(null);
@@ -371,7 +416,22 @@ const Dashboard = () => {
     setProfileViewError(null);
 
     try {
-      setViewedUser(await getUserDetail(targetUser.id));
+      const details = await getUserDetail(targetUser.id);
+      setViewedUser(details);
+      if (details.id === user?.id) {
+        setProfile(details.profile);
+        setProfileForm(
+          details.profile
+            ? {
+                phone: sanitizePhoneNumber(details.profile.phone ?? ""),
+                photoUrl: details.profile.photoUrl ?? "",
+                birthDate: details.profile.birthDate ?? "",
+              }
+            : EMPTY_PROFILE_FORM
+        );
+        setIsEditingProfile(false);
+        setProfileError(null);
+      }
     } catch (error) {
       setProfileViewError(
         getUserServiceErrorMessage(error, "No fue posible consultar el perfil.")
@@ -399,7 +459,7 @@ const Dashboard = () => {
     const profileData = {
       phone,
       photoUrl: profileForm.photoUrl.trim() || null,
-      birthDate: profile?.birthDate ?? profileForm.birthDate,
+      birthDate: profileForm.birthDate,
     };
 
     try {
@@ -412,6 +472,11 @@ const Dashboard = () => {
         photoUrl: savedProfile.photoUrl ?? "",
         birthDate: savedProfile.birthDate ?? "",
       });
+      setViewedUser((current) =>
+        current && current.id === user.id
+          ? { ...current, profile: savedProfile }
+          : current
+      );
       setIsEditingProfile(false);
       setSuccessMessage("Tu perfil se guardó correctamente.");
     } catch (error) {
@@ -544,96 +609,26 @@ const Dashboard = () => {
         {isLoadingProfile ? (
           <p className="mt-6 text-sm text-slate-400">Cargando perfil...</p>
         ) : profileError ? null : isEditingProfile ? (
-          <form onSubmit={(event) => void handleSaveProfile(event)} className="mt-6">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label htmlFor="profile-phone" className="text-sm font-semibold text-slate-200">
-                  Teléfono
-                </label>
-                <input
-                  id="profile-phone"
-                  type="tel"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  required
-                  maxLength={PHONE_DIGIT_COUNT}
-                  pattern={`\\d{${PHONE_DIGIT_COUNT}}`}
-                  title={PHONE_NUMBER_MESSAGE}
-                  value={profileForm.phone ?? ""}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      phone: sanitizePhoneNumber(event.target.value),
-                    }))
-                  }
-                  className={INPUT_CLASS}
-                />
-                <p className="mt-2 text-xs text-slate-500">
-                  Exactamente {PHONE_DIGIT_COUNT} dígitos, sin espacios ni símbolos.
-                </p>
-              </div>
-              <div>
-                <label htmlFor="profile-photo" className="text-sm font-semibold text-slate-200">
-                  URL de la foto de perfil
-                </label>
-                <input
-                  id="profile-photo"
-                  type="url"
-                  maxLength={2048}
-                  value={profileForm.photoUrl ?? ""}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({ ...current, photoUrl: event.target.value }))
-                  }
-                  className={INPUT_CLASS}
-                />
-              </div>
-              {!profile && (
-                <div>
-                  <label htmlFor="profile-birth-date" className="text-sm font-semibold text-slate-200">
-                    Fecha de nacimiento
-                  </label>
-                  <input
-                    id="profile-birth-date"
-                    type="date"
-                    required
-                    max={LATEST_BIRTH_DATE}
-                    value={profileForm.birthDate ?? ""}
-                    onChange={(event) =>
-                      setProfileForm((current) => ({ ...current, birthDate: event.target.value }))
+          <ProfileFieldsForm
+            values={profileForm}
+            latestBirthDate={LATEST_BIRTH_DATE}
+            isSaving={isSavingProfile}
+            inputClassName={INPUT_CLASS}
+            onChange={setProfileForm}
+            onSubmit={(event) => void handleSaveProfile(event)}
+            onCancel={() => {
+              setIsEditingProfile(false);
+              setProfileForm(
+                profile
+                  ? {
+                      phone: sanitizePhoneNumber(profile.phone ?? ""),
+                      photoUrl: profile.photoUrl ?? "",
+                      birthDate: profile.birthDate ?? "",
                     }
-                    className={INPUT_CLASS}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditingProfile(false);
-                  setProfileForm(
-                    profile
-                      ? {
-                          phone: sanitizePhoneNumber(profile.phone ?? ""),
-                          photoUrl: profile.photoUrl ?? "",
-                          birthDate: profile.birthDate ?? "",
-                        }
-                      : EMPTY_PROFILE_FORM
-                  );
-                }}
-                className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={isSavingProfile}
-                className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] disabled:opacity-60"
-              >
-                {isSavingProfile ? "Guardando..." : "Guardar perfil"}
-              </button>
-            </div>
-          </form>
+                  : EMPTY_PROFILE_FORM
+              );
+            }}
+          />
         ) : profile ? (
           <>
             {renderProfileDetails(profile)}
@@ -889,12 +884,20 @@ const Dashboard = () => {
                 currentUserId={user?.id}
                 updatingUserId={updatingUserId}
                 assigningRoleUserId={assigningRoleUserId}
+                removingRoleAssignmentId={removingRoleAssignmentId}
                 viewingUserId={viewingUserId}
                 viewedUser={viewedUser}
                 profileViewError={profileViewError}
                 canAssignRoles={canAssignRoles}
                 canViewUserDetails={canViewUserDetails}
                 canDeleteUsers={canDeleteUsers}
+                canEditViewedProfile={viewedUser?.id === user?.id}
+                isEditingViewedProfile={isEditingProfile}
+                viewedProfileForm={profileForm}
+                viewedProfileError={profileError}
+                isSavingViewedProfile={isSavingProfile}
+                latestBirthDate={LATEST_BIRTH_DATE}
+                inputClassName={INPUT_CLASS}
                 renderProfileDetails={renderProfileDetails}
                 onRefresh={handleRefreshUsers}
                 onSelectRole={(userId, roleId) =>
@@ -904,12 +907,37 @@ const Dashboard = () => {
                   }))
                 }
                 onAssignRole={(listedUser) => void handleAssignRole(listedUser)}
+                onRemoveRole={(listedUser, assignment) =>
+                  void handleRemoveRole(listedUser, assignment)
+                }
                 onViewProfile={(listedUser) => void handleViewProfile(listedUser)}
                 onCloseProfile={() => {
                   setViewedUser(null);
                   setProfileViewError(null);
+                  setIsEditingProfile(false);
+                  setProfileError(null);
                 }}
                 onDelete={(listedUser) => void handleDeleteUser(listedUser)}
+                onStartEditViewedProfile={() => {
+                  setProfileError(null);
+                  setSuccessMessage(null);
+                  setIsEditingProfile(true);
+                }}
+                onChangeViewedProfile={setProfileForm}
+                onCancelEditViewedProfile={() => {
+                  setIsEditingProfile(false);
+                  setProfileError(null);
+                  setProfileForm(
+                    viewedUser?.profile
+                      ? {
+                          phone: sanitizePhoneNumber(viewedUser.profile.phone ?? ""),
+                          photoUrl: viewedUser.profile.photoUrl ?? "",
+                          birthDate: viewedUser.profile.birthDate ?? "",
+                        }
+                      : EMPTY_PROFILE_FORM
+                  );
+                }}
+                onSaveViewedProfile={(event) => void handleSaveProfile(event)}
               />
             )}
           </>

@@ -1,4 +1,8 @@
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
+import { isAdministratorRole } from "../../services/roleService";
+import ProfileFieldsForm, {
+  type ProfileFormValues,
+} from "../profile/ProfileFieldsForm";
 import UserAuthorizationPanel from "../profile/UserAuthorizationPanel";
 import type {
   Role,
@@ -18,19 +22,32 @@ type UserDirectoryProps = {
   currentUserId?: number;
   updatingUserId: number | null;
   assigningRoleUserId: number | null;
+  removingRoleAssignmentId: number | null;
   viewingUserId: number | null;
   viewedUser: UserDetail | null;
   profileViewError: string | null;
   canAssignRoles: boolean;
   canViewUserDetails: boolean;
   canDeleteUsers: boolean;
+  canEditViewedProfile: boolean;
+  isEditingViewedProfile: boolean;
+  viewedProfileForm: ProfileFormValues;
+  viewedProfileError: string | null;
+  isSavingViewedProfile: boolean;
+  latestBirthDate: string;
+  inputClassName: string;
   renderProfileDetails: (profile: UserDetail["profile"]) => ReactNode;
   onRefresh: () => void;
   onSelectRole: (userId: number, roleId: string) => void;
   onAssignRole: (user: UserSummary) => void;
+  onRemoveRole: (user: UserSummary, assignment: UserRoleAssignment) => void;
   onViewProfile: (user: UserSummary) => void;
   onCloseProfile: () => void;
   onDelete: (user: UserSummary) => void;
+  onStartEditViewedProfile: () => void;
+  onChangeViewedProfile: (values: ProfileFormValues) => void;
+  onCancelEditViewedProfile: () => void;
+  onSaveViewedProfile: (event: FormEvent<HTMLFormElement>) => void;
 };
 
 const UserDirectory = ({
@@ -44,19 +61,32 @@ const UserDirectory = ({
   currentUserId,
   updatingUserId,
   assigningRoleUserId,
+  removingRoleAssignmentId,
   viewingUserId,
   viewedUser,
   profileViewError,
   canAssignRoles,
   canViewUserDetails,
   canDeleteUsers,
+  canEditViewedProfile,
+  isEditingViewedProfile,
+  viewedProfileForm,
+  viewedProfileError,
+  isSavingViewedProfile,
+  latestBirthDate,
+  inputClassName,
   renderProfileDetails,
   onRefresh,
   onSelectRole,
   onAssignRole,
+  onRemoveRole,
   onViewProfile,
   onCloseProfile,
   onDelete,
+  onStartEditViewedProfile,
+  onChangeViewedProfile,
+  onCancelEditViewedProfile,
+  onSaveViewedProfile,
 }: UserDirectoryProps) => {
   const showProfile = Boolean(viewedUser || viewingUserId || profileViewError);
 
@@ -159,14 +189,37 @@ const UserDirectory = ({
                               .filter(
                                 (assignment) => assignment.userId === listedUser.id
                               )
-                              .map((assignment) => (
-                                <span
-                                  key={assignment.id}
-                                  className="rounded-full border border-lime-400/20 bg-lime-400/10 px-2.5 py-1 text-xs text-lime-200"
-                                >
-                                  {assignment.role.name}
-                                </span>
-                              ))}
+                              .map((assignment) => {
+                                const isOwnAdminRole =
+                                  listedUser.id === currentUserId &&
+                                  isAdministratorRole(assignment.role);
+                                const isRemoving =
+                                  removingRoleAssignmentId === assignment.id;
+                                return (
+                                  <span
+                                    key={assignment.id}
+                                    className="inline-flex items-center gap-1 rounded-full border border-lime-400/20 bg-lime-400/10 py-1 pl-2.5 pr-1 text-xs text-lime-200"
+                                  >
+                                    {assignment.role.name}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        onRemoveRole(listedUser, assignment)
+                                      }
+                                      disabled={isOwnAdminRole || isRemoving}
+                                      title={
+                                        isOwnAdminRole
+                                          ? "No puedes quitarte el rol ADMIN"
+                                          : `Quitar rol ${assignment.role.name}`
+                                      }
+                                      aria-label={`Quitar rol ${assignment.role.name} de ${listedUser.name}`}
+                                      className="flex h-5 w-5 items-center justify-center rounded-full text-lime-100 transition hover:bg-red-500/20 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                      {isRemoving ? "…" : "×"}
+                                    </button>
+                                  </span>
+                                );
+                              })}
                             {!isLoadingRoleData &&
                               !userRoleAssignments.some(
                                 (assignment) => assignment.userId === listedUser.id
@@ -280,20 +333,44 @@ const UserDirectory = ({
               <p className="text-sm text-slate-400">Cargando perfil...</p>
             ) : viewedUser ? (
               <>
-                {viewedUser.profile ? (
+                {canEditViewedProfile && !isEditingViewedProfile && (
+                  <div className="mb-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={onStartEditViewedProfile}
+                      className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016]"
+                    >
+                      {viewedUser.profile ? "Editar perfil" : "Crear perfil"}
+                    </button>
+                  </div>
+                )}
+                {isEditingViewedProfile ? (
+                  <ProfileFieldsForm
+                    values={viewedProfileForm}
+                    latestBirthDate={latestBirthDate}
+                    error={viewedProfileError}
+                    isSaving={isSavingViewedProfile}
+                    inputClassName={inputClassName}
+                    onChange={onChangeViewedProfile}
+                    onSubmit={onSaveViewedProfile}
+                    onCancel={onCancelEditViewedProfile}
+                  />
+                ) : viewedUser.profile ? (
                   renderProfileDetails(viewedUser.profile)
                 ) : (
                   <p className="text-sm text-slate-400">
                     Este usuario aún no tiene perfil.
                   </p>
                 )}
-                <div className="mt-8 border-t border-slate-800 pt-6">
-                  <h3 className="text-base font-bold">Roles y permisos</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Accesos que tiene esta cuenta según los roles asignados.
-                  </p>
-                  <UserAuthorizationPanel roles={viewedUser.roles} />
-                </div>
+                {!isEditingViewedProfile && (
+                  <div className="mt-8 border-t border-slate-800 pt-6">
+                    <h3 className="text-base font-bold">Roles y permisos</h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Accesos que tiene esta cuenta según los roles asignados.
+                    </p>
+                    <UserAuthorizationPanel roles={viewedUser.roles} />
+                  </div>
+                )}
               </>
             ) : null}
           </div>

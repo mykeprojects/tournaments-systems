@@ -102,6 +102,13 @@ export const createUserRole = async (
   return response.data;
 };
 
+export const deleteUserRole = async (
+  userId: number,
+  roleId: number
+): Promise<void> => {
+  await apiClient.delete(`/api/user-roles/${userId}/${roleId}`);
+};
+
 export const getUserDetail = async (userId: number): Promise<UserDetail> => {
   const response = await apiClient.get<UserDetail>(`/api/users/${userId}/detail`);
   return response.data;

@@ -33,6 +33,7 @@ const PERMISSION_ROUTES: Record<PermissionKey, RouteGrant[]> = {
   "users.assignRoles": [
     { method: "GET", url: "/api/user-roles" },
     { method: "POST", url: "/api/user-roles" },
+    { method: "DELETE", url: "/api/user-roles/{id}/{id}" },
     { method: "GET", url: "/api/roles" },
   ],
   "roles.view": [{ method: "GET", url: "/api/roles" }],

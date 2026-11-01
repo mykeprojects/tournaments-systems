@@ -36,6 +36,7 @@ describe("permission-based UI authorization", () => {
     const permissions = [
       grant("GET", "/api/user-roles"),
       grant("POST", "/api/user-roles"),
+      grant("DELETE", "/api/user-roles/{id}/{id}"),
     ];
 
     expect(hasPermission(permissions, "users.assignRoles")).toBe(false);
@@ -56,6 +57,7 @@ describe("permission-based UI authorization", () => {
       grant("DELETE", "/api/users/{id}"),
       grant("GET", "/api/user-roles"),
       grant("POST", "/api/user-roles"),
+      grant("DELETE", "/api/user-roles/{id}/{id}"),
       grant("GET", "/api/roles"),
       grant("POST", "/api/roles"),
       grant("PUT", "/api/roles/{id}"),
