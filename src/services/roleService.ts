@@ -23,7 +23,15 @@ export interface RolePermissionAssignment {
 export interface CreateRoleRequest {
   name: string;
   description: string;
+  permissionIds?: number[];
 }
+
+export const DUPLICATE_ROLE_PERMISSION_MESSAGE =
+  "Ya existe un rol con esa misma configuración de permisos.";
+
+export const isAdministratorRole = (role: Pick<Role, "name"> | null): boolean =>
+  role !== null &&
+  role.name.trim().toLocaleUpperCase() === "ADMIN";
 
 export interface RolePermissionChangeSet {
   additions: number[];
@@ -55,6 +63,13 @@ export const updateRole = async (
 ): Promise<Role> => {
   const response = await apiClient.put<Role>(`/api/roles/${roleId}`, role);
   return response.data;
+};
+
+export const replaceRolePermissions = async (
+  roleId: number,
+  permissionIds: number[]
+): Promise<void> => {
+  await apiClient.put(`/api/roles/${roleId}/permissions`, { permissionIds });
 };
 
 export const deleteRole = async (roleId: number): Promise<void> => {
@@ -97,6 +112,30 @@ export const getRolePermissionChanges = (
       (assignment) => !selectedIds.has(assignment.permissionId)
     ),
   };
+};
+
+export const hasDuplicateRolePermissionSet = (
+  roleIds: number[],
+  assignments: RolePermissionAssignment[],
+  permissionIds: number[],
+  excludedRoleId?: number
+): boolean => {
+  const candidate = new Set(permissionIds);
+  const permissionIdsByRole = new Map<number, Set<number>>();
+  roleIds.forEach((roleId) => permissionIdsByRole.set(roleId, new Set()));
+
+  assignments.forEach(({ roleId, permissionId }) => {
+    permissionIdsByRole.get(roleId)?.add(permissionId);
+  });
+
+  return [...permissionIdsByRole.entries()].some(
+    ([roleId, assignedPermissionIds]) =>
+      roleId !== excludedRoleId &&
+      assignedPermissionIds.size === candidate.size &&
+      [...candidate].every((permissionId) =>
+        assignedPermissionIds.has(permissionId)
+      )
+  );
 };
 
 export const syncRolePermissions = async (
@@ -183,13 +222,15 @@ export const groupPermissionsByModule = (
     const modulePermissions = groups.get(module);
     if (!modulePermissions) return [];
 
-    return [{
-      module,
-      permissions: modulePermissions.sort(
-        (permissionA, permissionB) =>
-          permissionA.method.localeCompare(permissionB.method) ||
-          permissionA.url.localeCompare(permissionB.url)
-      ),
-    }];
+    return [
+      {
+        module,
+        permissions: modulePermissions.sort(
+          (permissionA, permissionB) =>
+            permissionA.method.localeCompare(permissionB.method) ||
+            permissionA.url.localeCompare(permissionB.url)
+        ),
+      },
+    ];
   });
 };

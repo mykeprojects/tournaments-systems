@@ -5,10 +5,13 @@ import { routePaths } from "../../routes/routePaths";
 import {
   createRole,
   deleteRole,
+  DUPLICATE_ROLE_PERMISSION_MESSAGE,
   groupPermissionsByModule,
+  hasDuplicateRolePermissionSet,
+  isAdministratorRole,
   listPermissions,
   listRolePermissionAssignments,
-  syncRolePermissions,
+  replaceRolePermissions,
   updateRole,
   type Permission,
   type RolePermissionAssignment,
@@ -77,13 +80,17 @@ const RoleFormModal = ({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDuplicateWarningOpen, setIsDuplicateWarningOpen] = useState(false);
+  const isAdministrator = isAdministratorRole(role);
+  const canModifySelectedPermissions =
+    canAssignPermissions && !isAdministrator;
   const groupedPermissions = useMemo(
     () => groupPermissionsByModule(permissions),
     [permissions]
   );
 
   const togglePermission = (permissionId: number) => {
-    if (!canAssignPermissions) return;
+    if (!canModifySelectedPermissions) return;
     setSelectedPermissionIds((current) =>
       current.includes(permissionId)
         ? current.filter((id) => id !== permissionId)
@@ -92,7 +99,7 @@ const RoleFormModal = ({
   };
 
   const toggleModule = (permissionIds: number[]) => {
-    if (!canAssignPermissions) return;
+    if (!canModifySelectedPermissions) return;
     setSelectedPermissionIds((current) => {
       const selectedAll = permissionIds.every((id) => current.includes(id));
       if (selectedAll) {
@@ -105,6 +112,7 @@ const RoleFormModal = ({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setIsDuplicateWarningOpen(false);
     setIsSaving(true);
     try {
       await onSave({
@@ -113,12 +121,17 @@ const RoleFormModal = ({
         permissionIds: selectedPermissionIds,
       });
     } catch (saveError) {
-      setError(
-        getUserServiceErrorMessage(
-          saveError,
-          "No fue posible guardar el rol y sus permisos."
-        )
+      const message = getUserServiceErrorMessage(
+        saveError,
+        "No fue posible guardar el rol y sus permisos."
       );
+      if (message.toLocaleLowerCase().includes(
+        "misma configuración de permisos"
+      )) {
+        setIsDuplicateWarningOpen(true);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -165,7 +178,7 @@ const RoleFormModal = ({
                   required
                   minLength={1}
                   maxLength={50}
-                  disabled={!canEditRole}
+                  disabled={!canEditRole || isAdministrator}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   className={INPUT_CLASS}
@@ -196,6 +209,11 @@ const RoleFormModal = ({
                   <p className="mt-1 text-xs text-slate-400">
                     Selecciona los endpoints que podrá utilizar este rol.
                   </p>
+                  {isAdministrator && (
+                    <p className="mt-2 text-xs font-medium text-amber-300">
+                      El rol administrador conserva todos los permisos y solo se muestran en modo de consulta.
+                    </p>
+                  )}
                 </div>
                 <span className="text-xs text-slate-400">
                   {selectedPermissionIds.length} de {permissions.length} seleccionados
@@ -228,7 +246,7 @@ const RoleFormModal = ({
                           <button
                             type="button"
                             onClick={() => toggleModule(modulePermissionIds)}
-                            disabled={!canAssignPermissions}
+                            disabled={!canModifySelectedPermissions}
                             className="text-xs font-semibold text-lime-300 hover:text-lime-200"
                           >
                             {selectedCount === modulePermissionIds.length
@@ -246,7 +264,7 @@ const RoleFormModal = ({
                                 type="checkbox"
                                 checked={selectedPermissionIds.includes(permission.id)}
                                 onChange={() => togglePermission(permission.id)}
-                                disabled={!canAssignPermissions}
+                                disabled={!canModifySelectedPermissions}
                                 className="mt-1 accent-lime-400"
                               />
                               <span className="min-w-0">
@@ -286,6 +304,42 @@ const RoleFormModal = ({
             </button>
           </div>
         </form>
+        {isDuplicateWarningOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4 py-6 backdrop-blur-sm"
+          >
+            <section
+              aria-labelledby="duplicate-role-warning-title"
+              aria-modal="true"
+              className="w-full max-w-lg rounded-2xl border border-amber-400/40 bg-[#0b1711] p-6 text-white shadow-2xl sm:p-8"
+              role="alertdialog"
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">
+                Operación no permitida
+              </p>
+              <h2
+                id="duplicate-role-warning-title"
+                className="mt-2 text-xl font-black"
+              >
+                Combinación de permisos duplicada
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-slate-300">
+                {DUPLICATE_ROLE_PERMISSION_MESSAGE} Cambia la selección de permisos
+                para que cada rol tenga una configuración diferente.
+              </p>
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  autoFocus
+                  onClick={() => setIsDuplicateWarningOpen(false)}
+                  className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300"
+                >
+                  Entendido
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </section>
     </div>
   );
@@ -415,36 +469,36 @@ const RoleManagement = () => {
       throw new Error("No tienes permiso para modificar este rol.");
     }
 
-    const savedRole = editingRole
-      ? canEditRoles
-        ? await updateRole(editingRole.id, {
-          name: values.name,
-          description: values.description,
-          })
-        : editingRole
-      : await createRole({
-          name: values.name,
-          description: values.description,
-        });
+    const isEditingAdministrator = isAdministratorRole(editingRole);
+    const canSavePermissionSet =
+      canAssignPermissions && canViewPermissions && !isEditingAdministrator;
+    const permissionIds = [...new Set(values.permissionIds)];
+    if (
+      (!editingRole || canSavePermissionSet) &&
+      hasDuplicateRolePermissionSet(
+        roleData.roles.map(({ id }) => id),
+        roleData.rolePermissions,
+        permissionIds,
+        editingRole?.id
+      )
+    ) {
+      throw new Error(DUPLICATE_ROLE_PERMISSION_MESSAGE);
+    }
 
-    try {
-      if (canAssignPermissions && canViewPermissions) {
-        await syncRolePermissions(
-          savedRole.id,
-          values.permissionIds,
-          roleData.rolePermissions
-        );
-      }
-    } catch (error) {
-      setPageError(
-        getUserServiceErrorMessage(
-          error,
-          "El rol se guardó, pero no fue posible sincronizar todos sus permisos."
-        )
-      );
-      setIsRefreshing(true);
-      await refreshData();
-      throw error;
+    if (!editingRole) {
+      await createRole({
+        name: values.name,
+        description: values.description,
+        ...(canSavePermissionSet ? { permissionIds } : {}),
+      });
+    } else if (canEditRoles) {
+      await updateRole(editingRole.id, {
+          name: values.name,
+          description: values.description,
+          ...(canSavePermissionSet ? { permissionIds } : {}),
+      });
+    } else if (canSavePermissionSet) {
+      await replaceRolePermissions(editingRole.id, permissionIds);
     }
 
     setIsCreatingRole(false);
@@ -674,7 +728,7 @@ const RoleManagement = () => {
                             >
                               Editar
                             </button>}
-                            {canDeleteRoles && <button
+                            {canDeleteRoles && !isAdministratorRole(role) && <button
                               type="button"
                               onClick={() => void handleDeleteRole(role)}
                               disabled={
