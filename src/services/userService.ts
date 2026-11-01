@@ -42,8 +42,23 @@ export interface Profile {
   birthDate: string;
 }
 
+export interface PermissionAuthorization {
+  id: number;
+  url: string;
+  method: string;
+  model: string | null;
+}
+
+export interface RoleAuthorization {
+  id: number;
+  name: string;
+  description: string;
+  permissions: PermissionAuthorization[];
+}
+
 export interface UserDetail extends UserSummary {
   profile: Profile | null;
+  roles?: RoleAuthorization[];
 }
 
 export const listUsers = async (): Promise<UserSummary[]> => {

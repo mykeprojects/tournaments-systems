@@ -37,3 +37,36 @@ input {
 #root {
   min-height: 100vh;
 }
+
+.directory-stage {
+  position: relative;
+  height: min(34rem, 62vh);
+}
+
+.directory-layer {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  transition: opacity 260ms ease;
+}
+
+.directory-layer-active {
+  z-index: 1;
+  opacity: 1;
+}
+
+.directory-layer-inactive {
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.directory-layer::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.directory-layer::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 35%);
+  border-radius: 999px;
+}

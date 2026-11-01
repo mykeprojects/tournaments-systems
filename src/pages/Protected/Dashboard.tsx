@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import UserDirectory from "../../components/admin/UserDirectory";
+import UserAuthorizationPanel from "../../components/profile/UserAuthorizationPanel";
+import {
+  isValidPhoneNumber,
+  PHONE_DIGIT_COUNT,
+  PHONE_NUMBER_MESSAGE,
+  sanitizePhoneNumber,
+} from "../../domain/profile/phoneNumber";
 import { useAuth } from "../../hooks/useAuth";
 import { routePaths } from "../../routes/routePaths";
 import {
@@ -166,7 +174,7 @@ const Dashboard = () => {
           setProfile(details.profile);
           setProfileForm(details.profile
             ? {
-                phone: details.profile.phone ?? "",
+                phone: sanitizePhoneNumber(details.profile.phone ?? ""),
                 photoUrl: details.profile.photoUrl ?? "",
                 birthDate: details.profile.birthDate ?? "",
               }
@@ -302,6 +310,10 @@ const Dashboard = () => {
     setSuccessMessage(null);
     try {
       await deleteUser(targetUser.id);
+      if (viewedUser?.id === targetUser.id) {
+        setViewedUser(null);
+        setProfileViewError(null);
+      }
       setSuccessMessage(`El usuario ${targetUser.name} se eliminó correctamente.`);
       setIsLoadingUsers(true);
       await refreshUsers();
@@ -377,9 +389,15 @@ const Dashboard = () => {
 
     setProfileError(null);
     setSuccessMessage(null);
+    const phone = sanitizePhoneNumber(profileForm.phone);
+    if (!isValidPhoneNumber(phone)) {
+      setProfileError(PHONE_NUMBER_MESSAGE);
+      return;
+    }
+
     setIsSavingProfile(true);
     const profileData = {
-      phone: profileForm.phone.trim(),
+      phone,
       photoUrl: profileForm.photoUrl.trim() || null,
       birthDate: profile?.birthDate ?? profileForm.birthDate,
     };
@@ -535,14 +553,24 @@ const Dashboard = () => {
                 <input
                   id="profile-phone"
                   type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
                   required
-                  maxLength={30}
+                  maxLength={PHONE_DIGIT_COUNT}
+                  pattern={`\\d{${PHONE_DIGIT_COUNT}}`}
+                  title={PHONE_NUMBER_MESSAGE}
                   value={profileForm.phone ?? ""}
                   onChange={(event) =>
-                    setProfileForm((current) => ({ ...current, phone: event.target.value }))
+                    setProfileForm((current) => ({
+                      ...current,
+                      phone: sanitizePhoneNumber(event.target.value),
+                    }))
                   }
                   className={INPUT_CLASS}
                 />
+                <p className="mt-2 text-xs text-slate-500">
+                  Exactamente {PHONE_DIGIT_COUNT} dígitos, sin espacios ni símbolos.
+                </p>
               </div>
               <div>
                 <label htmlFor="profile-photo" className="text-sm font-semibold text-slate-200">
@@ -586,7 +614,7 @@ const Dashboard = () => {
                   setProfileForm(
                     profile
                       ? {
-                          phone: profile.phone ?? "",
+                          phone: sanitizePhoneNumber(profile.phone ?? ""),
                           photoUrl: profile.photoUrl ?? "",
                           birthDate: profile.birthDate ?? "",
                         }
@@ -624,6 +652,15 @@ const Dashboard = () => {
           <p className="mt-6 text-sm text-slate-400">
             Aún no tienes un perfil. Usa “Crear perfil” para añadir tus datos.
           </p>
+        )}
+        {!isEditingProfile && !isLoadingProfile && !profileError && (
+          <div className="mt-8 border-t border-slate-800 pt-6">
+            <h3 className="text-base font-bold">Roles y permisos</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Accesos que tiene tu cuenta según los roles asignados.
+            </p>
+            <UserAuthorizationPanel roles={accountDetails?.roles} />
+          </div>
         )}
       </section>
     );
@@ -674,7 +711,7 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {renderOwnProfileSection()}
+        {!canViewUsers && renderOwnProfileSection()}
 
         {twoFactorStatus?.available && (
           <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
@@ -840,173 +877,40 @@ const Dashboard = () => {
               </section>
             )}
 
-            {canViewUsers && <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1711]">
-              <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-5 py-5 sm:px-7">
-                <div>
-                  <h2 className="font-bold">Usuarios registrados</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {isLoadingUsers ? "Cargando..." : `${users.length} usuarios`}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRefreshUsers}
-                  disabled={isLoadingUsers}
-                  className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 disabled:opacity-50"
-                >
-                  Actualizar
-                </button>
-              </div>
-              {listError && <p role="alert" className="px-6 py-4 text-sm text-red-300">{listError}</p>}
-              {isLoadingUsers ? (
-                <p className="px-6 py-10 text-center text-sm text-slate-400">Cargando usuarios...</p>
-              ) : users.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-slate-400">
-                  Aún no hay usuarios registrados.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[1080px] text-left text-sm">
-                    <thead className="bg-white/[0.02] text-xs uppercase tracking-wider text-slate-500">
-                      <tr>
-                        <th scope="col" className="px-6 py-4 font-semibold">ID</th>
-                        <th scope="col" className="px-6 py-4 font-semibold">Nombre</th>
-                        <th scope="col" className="px-6 py-4 font-semibold">Correo electrónico</th>
-                        {canAssignRoles && (
-                          <th scope="col" className="px-6 py-4 font-semibold">Roles</th>
-                        )}
-                        <th scope="col" className="px-6 py-4 font-semibold">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800">
-                      {users.map((listedUser) => (
-                        <tr key={listedUser.id} className="transition hover:bg-white/[0.02]">
-                          <td className="px-6 py-4 text-slate-500">{listedUser.id}</td>
-                          <td className="px-6 py-4 font-semibold text-slate-200">{listedUser.name}</td>
-                          <td className="px-6 py-4 text-slate-400">{listedUser.email}</td>
-                          {canAssignRoles && <td className="px-6 py-4">
-                            <div className="mb-3 flex flex-wrap gap-2">
-                              {userRoleAssignments
-                                .filter((assignment) => assignment.userId === listedUser.id)
-                                .map((assignment) => (
-                                  <span
-                                    key={assignment.id}
-                                    className="rounded-full border border-lime-400/20 bg-lime-400/10 px-2.5 py-1 text-xs text-lime-200"
-                                  >
-                                    {assignment.role.name}
-                                  </span>
-                                ))}
-                              {!isLoadingRoleData &&
-                                !userRoleAssignments.some(
-                                  (assignment) => assignment.userId === listedUser.id
-                                ) && (
-                                  <span className="text-xs text-slate-500">Sin roles</span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <select
-                                aria-label={`Rol para ${listedUser.name}`}
-                                value={selectedRoleByUser[listedUser.id] ?? ""}
-                                onChange={(event) =>
-                                  setSelectedRoleByUser((current) => ({
-                                    ...current,
-                                    [listedUser.id]: event.target.value,
-                                  }))
-                                }
-                                disabled={isLoadingRoleData || roles.length === 0}
-                                className="min-w-36 rounded-lg border border-slate-700 bg-[#0b1711] px-3 py-2 text-xs text-white disabled:opacity-50"
-                              >
-                                <option value="">
-                                  {isLoadingRoleData ? "Cargando roles..." : "Asignar rol"}
-                                </option>
-                                {roles
-                                  .filter(
-                                    (role) =>
-                                      !userRoleAssignments.some(
-                                        (assignment) =>
-                                          assignment.userId === listedUser.id &&
-                                          assignment.role.id === role.id
-                                      )
-                                  )
-                                  .map((role) => (
-                                    <option key={role.id} value={role.id}>
-                                      {role.name}
-                                    </option>
-                                  ))}
-                              </select>
-                              <button
-                                type="button"
-                                onClick={() => void handleAssignRole(listedUser)}
-                                disabled={
-                                  isLoadingRoleData ||
-                                  assigningRoleUserId === listedUser.id ||
-                                  !selectedRoleByUser[listedUser.id]
-                                }
-                                className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 disabled:cursor-not-allowed disabled:opacity-40"
-                              >
-                                {assigningRoleUserId === listedUser.id ? "Asignando..." : "Asignar"}
-                              </button>
-                            </div>
-                          </td>}
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              {canViewUserDetails && <button
-                                type="button"
-                                onClick={() => void handleViewProfile(listedUser)}
-                                disabled={viewingUserId === listedUser.id}
-                                className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 disabled:opacity-50"
-                              >
-                                {viewingUserId === listedUser.id ? "Cargando..." : "Ver perfil"}
-                              </button>}
-                              {canDeleteUsers && <button
-                                  type="button"
-                                  onClick={() => void handleDeleteUser(listedUser)}
-                                  disabled={updatingUserId === listedUser.id || listedUser.id === user?.id}
-                                  title={listedUser.id === user?.id ? "No puedes eliminar tu propia cuenta" : "Eliminar usuario"}
-                                  className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
-                                >
-                                  {updatingUserId === listedUser.id ? "Eliminando..." : "Eliminar"}
-                                </button>}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>}
-
-            {canViewUsers && (viewedUser || profileViewError) && (
-              <section className="mt-6 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold">Perfil del usuario</h2>
-                    {viewedUser && (
-                      <p className="mt-2 text-sm text-slate-400">
-                        {viewedUser.name} · {viewedUser.email}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setViewedUser(null);
-                      setProfileViewError(null);
-                    }}
-                    className="text-sm text-slate-400 hover:text-white"
-                  >
-                    Cerrar
-                  </button>
-                </div>
-                {profileViewError ? (
-                  <p role="alert" className="mt-4 text-sm text-red-300">{profileViewError}</p>
-                ) : viewedUser?.profile ? (
-                  renderProfileDetails(viewedUser.profile)
-                ) : (
-                  <p className="mt-4 text-sm text-slate-400">Este usuario aún no tiene perfil.</p>
-                )}
-              </section>
+            {canViewUsers && (
+              <UserDirectory
+                users={users}
+                roles={roles}
+                userRoleAssignments={userRoleAssignments}
+                selectedRoleByUser={selectedRoleByUser}
+                isLoadingUsers={isLoadingUsers}
+                isLoadingRoleData={isLoadingRoleData}
+                listError={listError}
+                currentUserId={user?.id}
+                updatingUserId={updatingUserId}
+                assigningRoleUserId={assigningRoleUserId}
+                viewingUserId={viewingUserId}
+                viewedUser={viewedUser}
+                profileViewError={profileViewError}
+                canAssignRoles={canAssignRoles}
+                canViewUserDetails={canViewUserDetails}
+                canDeleteUsers={canDeleteUsers}
+                renderProfileDetails={renderProfileDetails}
+                onRefresh={handleRefreshUsers}
+                onSelectRole={(userId, roleId) =>
+                  setSelectedRoleByUser((current) => ({
+                    ...current,
+                    [userId]: roleId,
+                  }))
+                }
+                onAssignRole={(listedUser) => void handleAssignRole(listedUser)}
+                onViewProfile={(listedUser) => void handleViewProfile(listedUser)}
+                onCloseProfile={() => {
+                  setViewedUser(null);
+                  setProfileViewError(null);
+                }}
+                onDelete={(listedUser) => void handleDeleteUser(listedUser)}
+              />
             )}
           </>
         ) : null}
