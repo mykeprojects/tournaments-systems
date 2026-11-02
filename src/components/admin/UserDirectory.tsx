@@ -10,6 +10,10 @@ import type {
   UserRoleAssignment,
   UserSummary,
 } from "../../services/userService";
+import {
+  isAdministratorRoleAssignmentRemovalProtected,
+  ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE,
+} from "../../services/userService";
 
 type UserDirectoryProps = {
   users: UserSummary[];
@@ -193,6 +197,13 @@ const UserDirectory = ({
                                 const isOwnAdminRole =
                                   listedUser.id === currentUserId &&
                                   isAdministratorRole(assignment.role);
+                                const isProtectedAdministratorRole =
+                                  isAdministratorRoleAssignmentRemovalProtected(
+                                    userRoleAssignments,
+                                    currentUserId,
+                                    listedUser.id,
+                                    assignment.role
+                                  );
                                 const isRemoving =
                                   removingRoleAssignmentId === assignment.id;
                                 return (
@@ -206,13 +217,23 @@ const UserDirectory = ({
                                       onClick={() =>
                                         onRemoveRole(listedUser, assignment)
                                       }
-                                      disabled={isOwnAdminRole || isRemoving}
+                                      disabled={
+                                        isOwnAdminRole ||
+                                        isProtectedAdministratorRole ||
+                                        isRemoving
+                                      }
                                       title={
                                         isOwnAdminRole
                                           ? "No puedes quitarte el rol ADMIN"
+                                          : isProtectedAdministratorRole
+                                            ? ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE
                                           : `Quitar rol ${assignment.role.name}`
                                       }
-                                      aria-label={`Quitar rol ${assignment.role.name} de ${listedUser.name}`}
+                                      aria-label={
+                                        isProtectedAdministratorRole
+                                          ? `${ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE} Rol de ${listedUser.name}.`
+                                          : `Quitar rol ${assignment.role.name} de ${listedUser.name}`
+                                      }
                                       className="flex h-5 w-5 items-center justify-center rounded-full text-lime-100 transition hover:bg-red-500/20 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                       {isRemoving ? "…" : "×"}

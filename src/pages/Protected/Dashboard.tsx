@@ -20,6 +20,8 @@ import {
   deleteUserRole,
   getUserDetail,
   getUserServiceErrorMessage,
+  isAdministratorRoleAssignmentRemovalProtected,
+  ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE,
   listRoles,
   listUserRoleAssignments,
   listUsers,
@@ -372,6 +374,19 @@ const Dashboard = () => {
     assignment: UserRoleAssignment
   ) => {
     if (!canAssignRoles) return;
+    if (
+      isAdministratorRoleAssignmentRemovalProtected(
+        userRoleAssignments,
+        user?.id,
+        targetUser.id,
+        assignment.role
+      )
+    ) {
+      setRoleManagementError(
+        ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE
+      );
+      return;
+    }
     if (targetUser.id === user?.id && isAdministratorRole(assignment.role)) {
       setRoleManagementError("No puedes quitarte el rol ADMIN.");
       return;

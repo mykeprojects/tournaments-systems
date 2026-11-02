@@ -29,6 +29,29 @@ export interface UserRoleAssignment {
   role: Role;
 }
 
+export const ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE =
+  "No puedes quitar el rol de administrador a otro usuario que también tiene ese rol.";
+
+const isAdministratorRoleAssignment = (role: Pick<Role, "name">): boolean =>
+  ["ADMIN", "ADMINISTRADOR"].includes(
+    role.name.trim().toLocaleUpperCase()
+  );
+
+export const isAdministratorRoleAssignmentRemovalProtected = (
+  assignments: UserRoleAssignment[],
+  currentUserId: number | undefined,
+  targetUserId: number,
+  targetRole: Pick<Role, "name">
+): boolean =>
+  currentUserId !== undefined &&
+  currentUserId !== targetUserId &&
+  isAdministratorRoleAssignment(targetRole) &&
+  assignments.some(
+    (assignment) =>
+      assignment.userId === currentUserId &&
+      isAdministratorRoleAssignment(assignment.role)
+  );
+
 export interface CreateUserRoleRequest {
   userId: number;
   roleId: number;
