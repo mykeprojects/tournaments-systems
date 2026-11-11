@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
+import CreatePermissionForm from "../../components/admin/CreatePermissionForm";
+import DeletePermissionForm from "../../components/admin/DeletePermissionForm";
+import EditPermissionForm from "../../components/admin/EditPermissionForm";
+import RolePermissionMatrix from "../../components/admin/RolePermissionMatrix";
+import Icon from "../../components/icons/Icon";
+import {
+  arePermissionIdSetsEqual,
+  assignedPermissionIdsForRole,
+  toggleMatrixCell,
+} from "../../domain/authorization/permissionMatrix";
 import { useAuth } from "../../hooks/useAuth";
 import { routePaths } from "../../routes/routePaths";
 import {
@@ -358,17 +368,30 @@ const RoleManagement = () => {
   const canEditRoles = hasPermission("roles.edit");
   const canDeleteRoles = hasPermission("roles.delete");
   const canViewPermissions = hasPermission("permissions.view");
+  const canCreatePermissions = hasPermission("permissions.create");
+  const canEditPermissions = hasPermission("permissions.edit");
+  const canDeletePermissions = hasPermission("permissions.delete");
   const canAssignPermissions = hasPermission("permissions.assign");
   const canViewUserRoleAssignments = hasPermission("users.assignRoles");
   const [roleData, setRoleData] = useState<RoleData>(emptyRoleData);
   const [isLoading, setIsLoading] = useState(canViewRoles);
-  const [isRefreshing, setIsRefreshing] = useState(canViewRoles);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [isCreatingRole, setIsCreatingRole] = useState(false);
   const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  const [draftPermissionIds, setDraftPermissionIds] = useState<number[]>([]);
+  const [isSavingMatrix, setIsSavingMatrix] = useState(false);
+  const [isCreatePermissionOpen, setIsCreatePermissionOpen] = useState(false);
+  const [isEditPermissionOpen, setIsEditPermissionOpen] = useState(false);
+  const [isDeletePermissionOpen, setIsDeletePermissionOpen] = useState(false);
+  const [permissionBeingEdited, setPermissionBeingEdited] =
+    useState<Permission | null>(null);
+  const [matrixSuccess, setMatrixSuccess] = useState<string | null>(null);
+  const [matrixError, setMatrixError] = useState<string | null>(null);
 
   const loadRoleData = useCallback(async (): Promise<RoleData> => {
     const [roles, permissions, rolePermissions, userRoles] = await Promise.all([
@@ -388,13 +411,17 @@ const RoleManagement = () => {
     canViewUserRoleAssignments,
   ]);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (): Promise<RoleData | null> => {
     try {
-      setRoleData(await loadRoleData());
+      const data = await loadRoleData();
+      setRoleData(data);
+      setLoadError(null);
+      return data;
     } catch (error) {
       setLoadError(
         getUserServiceErrorMessage(error, "No fue posible cargar roles y permisos.")
       );
+      return null;
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -441,6 +468,36 @@ const RoleManagement = () => {
     }
     return counts;
   }, [roleData.userRoles]);
+
+  const persistedPermissionIds = useMemo(
+    () =>
+      selectedRoleId === null
+        ? []
+        : assignedPermissionIdsForRole(selectedRoleId, roleData.rolePermissions),
+    [roleData.rolePermissions, selectedRoleId]
+  );
+  const isMatrixDirty = !arePermissionIdSetsEqual(
+    draftPermissionIds,
+    persistedPermissionIds
+  );
+
+  useEffect(() => {
+    if (roleData.roles.length === 0) {
+      setSelectedRoleId(null);
+      setDraftPermissionIds([]);
+      return;
+    }
+    const selectedStillExists = roleData.roles.some(
+      (role) => role.id === selectedRoleId
+    );
+    if (!selectedStillExists) {
+      const nextRoleId = roleData.roles[0].id;
+      setSelectedRoleId(nextRoleId);
+      setDraftPermissionIds(
+        assignedPermissionIdsForRole(nextRoleId, roleData.rolePermissions)
+      );
+    }
+  }, [roleData.rolePermissions, roleData.roles, selectedRoleId]);
 
   const rolePermissionCounts = useMemo(() => {
     const counts = new Map<number, number>();
@@ -542,6 +599,75 @@ const RoleManagement = () => {
 
   const handleLogout = () => void logout();
 
+  const handleSelectMatrixRole = (roleId: number): boolean => {
+    if (roleId === selectedRoleId) {
+      return true;
+    }
+    if (
+      isMatrixDirty &&
+      !window.confirm("Hay cambios sin guardar en la matriz. ¿Descartarlos?")
+    ) {
+      return false;
+    }
+    setMatrixError(null);
+    setMatrixSuccess(null);
+    setSelectedRoleId(roleId);
+    setDraftPermissionIds(
+      assignedPermissionIdsForRole(roleId, roleData.rolePermissions)
+    );
+    return true;
+  };
+
+  const handleSaveMatrix = async () => {
+    if (selectedRoleId === null) {
+      return;
+    }
+    const selectedRole = roleData.roles.find((role) => role.id === selectedRoleId);
+    if (!selectedRole) {
+      return;
+    }
+    if (isAdministratorRole(selectedRole)) {
+      setMatrixError("El rol administrador no permite cambiar sus permisos.");
+      return;
+    }
+    if (!canAssignPermissions) {
+      setMatrixError("No tienes permiso para asignar permisos a roles.");
+      return;
+    }
+
+    const permissionIds = [...new Set(draftPermissionIds)];
+    if (
+      hasDuplicateRolePermissionSet(
+        roleData.roles.map(({ id }) => id),
+        roleData.rolePermissions,
+        permissionIds,
+        selectedRoleId
+      )
+    ) {
+      setMatrixError(DUPLICATE_ROLE_PERMISSION_MESSAGE);
+      return;
+    }
+
+    setIsSavingMatrix(true);
+    setMatrixError(null);
+    setMatrixSuccess(null);
+    try {
+      await replaceRolePermissions(selectedRoleId, permissionIds);
+      setMatrixSuccess("Permisos actualizados correctamente.");
+      setIsRefreshing(true);
+      await refreshData();
+    } catch (error) {
+      setMatrixError(
+        getUserServiceErrorMessage(
+          error,
+          "No fue posible guardar los permisos del rol."
+        )
+      );
+    } finally {
+      setIsSavingMatrix(false);
+    }
+  };
+
   if (permissionCheckError) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#07110d] px-5 text-white">
@@ -604,10 +730,10 @@ const RoleManagement = () => {
               Panel de control
             </p>
             <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-              Gestión de roles
+              Asignar permisos a roles
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              Crea roles y administra los permisos que controlan el acceso a cada módulo.
+              Administra de manera centralizada los permisos que puede ejecutar cada rol del sistema.
             </p>
           </div>
           <button
@@ -620,7 +746,7 @@ const RoleManagement = () => {
             }}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span aria-hidden="true" className="text-lg leading-none">+</span>
+            <Icon name="plus" className="h-4 w-4" />
             Crear rol
           </button>
         </div>
@@ -636,12 +762,93 @@ const RoleManagement = () => {
           </p>
         )}
 
+        {(canViewPermissions || canAssignPermissions) && (
+          <RolePermissionMatrix
+            roles={roleData.roles}
+            permissions={roleData.permissions}
+            assignments={roleData.rolePermissions}
+            selectedRoleId={selectedRoleId}
+            selectedPermissionIds={draftPermissionIds}
+            assignedUsers={
+              selectedRoleId === null
+                ? 0
+                : assignedUsersByRole.get(selectedRoleId) ?? 0
+            }
+            isLoading={isLoading}
+            isRefreshing={isRefreshing}
+            isSaving={isSavingMatrix}
+            isDirty={isMatrixDirty}
+            canAssign={canAssignPermissions}
+            canCreatePermissions={canCreatePermissions}
+            canEditPermissions={canEditPermissions}
+            canDeletePermissions={canDeletePermissions}
+            successMessage={matrixSuccess}
+            errorMessage={matrixError}
+            onSelectRole={handleSelectMatrixRole}
+            onToggleCell={(permissionIds) => {
+              if (!canAssignPermissions) {
+                return;
+              }
+              setMatrixError(null);
+              setMatrixSuccess(null);
+              setDraftPermissionIds((current) =>
+                toggleMatrixCell(current, permissionIds)
+              );
+            }}
+            onLoad={() => {
+              setMatrixError(null);
+              setLoadError(null);
+              setIsRefreshing(true);
+              void refreshData().then((data) => {
+                if (!data) {
+                  setMatrixError("No fue posible cargar los permisos del rol.");
+                  return;
+                }
+                const roleId =
+                  selectedRoleId !== null &&
+                  data.roles.some((role) => role.id === selectedRoleId)
+                    ? selectedRoleId
+                    : data.roles[0]?.id ?? null;
+                setSelectedRoleId(roleId);
+                setDraftPermissionIds(
+                  roleId === null
+                    ? []
+                    : assignedPermissionIdsForRole(roleId, data.rolePermissions)
+                );
+                setMatrixSuccess("Permisos cargados correctamente.");
+              });
+            }}
+            onSave={() => void handleSaveMatrix()}
+            onReset={() => {
+              setMatrixError(null);
+              setMatrixSuccess(null);
+              setDraftPermissionIds(persistedPermissionIds);
+            }}
+            onCreatePermission={() => {
+              setMatrixError(null);
+              setIsCreatePermissionOpen(true);
+            }}
+            onEditPermission={(permission) => {
+              setMatrixError(null);
+              setPermissionBeingEdited(permission ?? null);
+              setIsEditPermissionOpen(true);
+            }}
+            onDeletePermission={(permission) => {
+              setMatrixError(null);
+              setPermissionBeingEdited(permission ?? null);
+              setIsDeletePermissionOpen(true);
+            }}
+          />
+        )}
+
         <section className="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1711]">
           <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-5 py-5 sm:px-7">
             <div>
               <h2 className="font-bold">Roles registrados</h2>
               <p className="mt-1 text-sm text-slate-500">
-                {isLoading ? "Cargando..." : `${roleData.roles.length} roles`}
+                {isLoading
+                  ? "Cargando..."
+                  : `${roleData.roles.length} roles. Usa Asignar para administrarlos en la matriz.`}
               </p>
             </div>
             <button
@@ -744,6 +951,21 @@ const RoleManagement = () => {
                             >
                               {deletingRoleId === role.id ? "Eliminando..." : "Eliminar"}
                             </button>}
+                            {canAssignPermissions && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPageError(null);
+                                  setSuccessMessage(null);
+                                  if (handleSelectMatrixRole(role.id)) {
+                                    window.scrollTo({ top: 0, behavior: "smooth" });
+                                  }
+                                }}
+                                className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 transition hover:bg-lime-400/10"
+                              >
+                                Asignar
+                              </button>
+                            )}
                             {canAssignPermissions && !canEditRoles && (
                               <button
                                 type="button"
@@ -774,6 +996,76 @@ const RoleManagement = () => {
           )}
         </section>
       </div>
+
+      {isCreatePermissionOpen && (
+        <CreatePermissionForm
+          onClose={() => setIsCreatePermissionOpen(false)}
+          onCreated={async (summary) => {
+            setMatrixSuccess(summary);
+            setIsRefreshing(true);
+            const data = await refreshData();
+            if (!data || selectedRoleId === null) {
+              return;
+            }
+            const selectedRole = data.roles.find(
+              (role) => role.id === selectedRoleId
+            );
+            if (selectedRole && isAdministratorRole(selectedRole)) {
+              setDraftPermissionIds(
+                assignedPermissionIdsForRole(
+                  selectedRoleId,
+                  data.rolePermissions
+                )
+              );
+            }
+          }}
+        />
+      )}
+
+      {isEditPermissionOpen && (
+        <EditPermissionForm
+          permissions={roleData.permissions}
+          initialPermission={permissionBeingEdited}
+          canDelete={canDeletePermissions}
+          onClose={() => {
+            setIsEditPermissionOpen(false);
+            setPermissionBeingEdited(null);
+          }}
+          onUpdated={async (summary) => {
+            setMatrixSuccess(summary);
+            setIsRefreshing(true);
+            const data = await refreshData();
+            if (!data || selectedRoleId === null) {
+              return;
+            }
+            setDraftPermissionIds(
+              assignedPermissionIdsForRole(selectedRoleId, data.rolePermissions)
+            );
+          }}
+        />
+      )}
+
+      {isDeletePermissionOpen && (
+        <DeletePermissionForm
+          permissions={roleData.permissions}
+          initialPermission={permissionBeingEdited}
+          onClose={() => {
+            setIsDeletePermissionOpen(false);
+            setPermissionBeingEdited(null);
+          }}
+          onDeleted={async (summary) => {
+            setMatrixSuccess(summary);
+            setIsRefreshing(true);
+            const data = await refreshData();
+            if (!data || selectedRoleId === null) {
+              return;
+            }
+            setDraftPermissionIds(
+              assignedPermissionIdsForRole(selectedRoleId, data.rolePermissions)
+            );
+          }}
+        />
+      )}
 
       {(isCreatingRole || editingRole) && (
         <RoleFormModal

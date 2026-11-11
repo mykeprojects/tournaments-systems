@@ -43,6 +43,34 @@ export const listPermissions = async (): Promise<Permission[]> => {
   return response.data;
 };
 
+export const createPermission = async (permission: {
+  url: string;
+  method: string;
+  model: string;
+}): Promise<Permission> => {
+  const response = await apiClient.post<Permission>("/api/permissions", permission);
+  return response.data;
+};
+
+export const updatePermission = async (
+  permissionId: number,
+  permission: {
+    url: string;
+    method: string;
+    model: string;
+  }
+): Promise<Permission> => {
+  const response = await apiClient.put<Permission>(
+    `/api/permissions/${permissionId}`,
+    permission
+  );
+  return response.data;
+};
+
+export const deletePermission = async (permissionId: number): Promise<void> => {
+  await apiClient.delete(`/api/permissions/${permissionId}`);
+};
+
 export const listRolePermissionAssignments = async (): Promise<
   RolePermissionAssignment[]
 > => {
