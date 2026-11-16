@@ -11,8 +11,8 @@ type FeedbackModalProps = {
 const variantStyles = {
   success: {
     icon: "✓",
-    iconClass: "bg-lime-400/15 text-lime-300",
-    titleClass: "text-lime-300",
+    iconClass: "bg-[#3dff7a]/15 text-[#3dff7a]",
+    titleClass: "text-[#3dff7a]",
   },
   error: {
     icon: "!",
@@ -39,7 +39,7 @@ const FeedbackModal = ({
       <section
         aria-labelledby="feedback-modal-title"
         aria-modal="true"
-        className="w-full max-w-md rounded-2xl border border-slate-700 bg-[#102016] p-6 text-white shadow-2xl shadow-black/50"
+        className="w-full max-w-md rounded-2xl border border-[#245078] bg-[#071321] p-6 text-white shadow-2xl shadow-black/50"
         role="dialog"
         onMouseDown={(event) => event.stopPropagation()}
       >
@@ -66,7 +66,7 @@ const FeedbackModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-600 px-4 py-2.5 text-sm font-bold text-slate-200 transition hover:border-slate-400 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-lime-300/60"
+              className="rounded-xl border border-slate-600 px-4 py-2.5 text-sm font-bold text-slate-200 transition hover:border-slate-400 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-[#62ff96]/60"
             >
               Cerrar
             </button>

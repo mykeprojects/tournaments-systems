@@ -6,7 +6,7 @@ import {
 import { getUserServiceErrorMessage } from "../../services/userService";
 
 const INPUT_CLASS =
-  "mt-2 w-full rounded-xl border border-slate-700 bg-[#0b1711] px-4 py-3 text-sm text-white outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
+  "mt-2 w-full rounded-xl border border-[#245078] bg-[#071321] px-4 py-3 text-sm text-white outline-none transition focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20";
 
 type DeletePermissionFormProps = {
   permissions: Permission[];
@@ -91,11 +91,11 @@ const DeletePermissionForm = ({
       <section
         aria-labelledby="delete-permission-title"
         aria-modal="true"
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-[#0b1711] text-white shadow-2xl"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#245078] bg-[#071321] text-white shadow-2xl"
         role="dialog"
       >
-        <div className="border-b border-slate-800 px-6 py-5">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-lime-400">
+        <div className="border-b border-[#1b3f63] px-6 py-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#3dff7a]">
             Catálogo
           </p>
           <h2 id="delete-permission-title" className="mt-2 text-2xl font-black">
@@ -118,7 +118,7 @@ const DeletePermissionForm = ({
           )}
 
           {catalog.length === 0 ? (
-            <p className="rounded-xl border border-slate-800 px-4 py-5 text-sm text-slate-400">
+            <p className="rounded-xl border border-[#1b3f63] px-4 py-5 text-sm text-slate-400">
               No hay permisos registrados para eliminar.
             </p>
           ) : (
@@ -146,7 +146,7 @@ const DeletePermissionForm = ({
               type="button"
               onClick={onClose}
               disabled={isDeleting}
-              className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
+              className="rounded-xl border border-[#245078] px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
             >
               Cancelar
             </button>

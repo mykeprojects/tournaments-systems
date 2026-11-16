@@ -150,7 +150,7 @@ const BirthDatePicker = ({
         <span className={value ? "text-white" : "text-slate-500"}>
           {formatDisplayDate(value)}
         </span>
-        <span aria-hidden="true" className="ml-3 text-lime-300">
+        <span aria-hidden="true" className="ml-3 text-[#3dff7a]">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <rect
               x="3"
@@ -179,7 +179,7 @@ const BirthDatePicker = ({
             left: popoverPosition.left,
             width: POPOVER_WIDTH,
           }}
-          className="fixed z-50 rounded-xl border border-slate-700 bg-[#0b1711] p-3 shadow-2xl"
+          className="fixed z-50 rounded-xl border border-[#245078] bg-[#071321] p-3 shadow-2xl"
         >
           <div className="mb-2 grid grid-cols-2 gap-2">
             <label className="sr-only" htmlFor={`${id}-month`}>
@@ -189,7 +189,7 @@ const BirthDatePicker = ({
               id={`${id}-month`}
               value={visibleMonth.getMonth()}
               onChange={(event) => selectMonth(Number(event.target.value))}
-              className="rounded-lg border border-slate-700 bg-[#07110d] px-2 py-1.5 text-xs text-white"
+              className="rounded-lg border border-[#245078] bg-[#050b14] px-2 py-1.5 text-xs text-white"
             >
               {monthOptions().map((month, index) => (
                 <option key={month} value={index}>
@@ -204,7 +204,7 @@ const BirthDatePicker = ({
               id={`${id}-year`}
               value={visibleMonth.getFullYear()}
               onChange={(event) => selectYear(Number(event.target.value))}
-              className="rounded-lg border border-slate-700 bg-[#07110d] px-2 py-1.5 text-xs text-white"
+              className="rounded-lg border border-[#245078] bg-[#050b14] px-2 py-1.5 text-xs text-white"
             >
               {years.map((year) => (
                 <option key={year} value={year}>
@@ -239,7 +239,7 @@ const BirthDatePicker = ({
                   }}
                   className={`h-7 rounded-md text-xs transition ${
                     selected
-                      ? "bg-lime-400 font-bold text-[#102016]"
+                      ? "bg-[#3dff7a] font-bold text-[#04210f]"
                       : disabled
                         ? "cursor-not-allowed text-slate-600"
                         : "text-slate-200 hover:bg-white/10"

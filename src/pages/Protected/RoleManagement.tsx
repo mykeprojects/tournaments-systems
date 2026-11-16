@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import { primaryButtonClass } from "../../sports/format";
+import { ShieldIcon } from "../../sports/glyphs";
+import { PageHeader } from "../../sports/ui";
 import CreatePermissionForm from "../../components/admin/CreatePermissionForm";
 import DeletePermissionForm from "../../components/admin/DeletePermissionForm";
 import EditPermissionForm from "../../components/admin/EditPermissionForm";
@@ -35,7 +38,7 @@ import {
 } from "../../services/userService";
 
 const INPUT_CLASS =
-  "mt-2 w-full rounded-xl border border-slate-700 bg-[#0b1711] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
+  "mt-2 w-full rounded-xl border border-[#245078] bg-[#071321] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20";
 
 interface RoleFormValues {
   name: string;
@@ -158,11 +161,11 @@ const RoleFormModal = ({
       <section
         aria-labelledby="role-form-title"
         aria-modal="true"
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-[#0b1711] text-white shadow-2xl"
+        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#245078] bg-[#071321] text-white shadow-2xl"
         role="dialog"
       >
-        <div className="border-b border-slate-800 px-6 py-5 sm:px-8">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-lime-400">
+        <div className="border-b border-[#1b3f63] px-6 py-5 sm:px-8">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#3dff7a]">
             Administración
           </p>
           <h2 id="role-form-title" className="mt-2 text-2xl font-black">
@@ -231,11 +234,11 @@ const RoleFormModal = ({
               </div>
 
               {!canViewPermissions ? (
-                <p className="mt-4 rounded-xl border border-slate-800 px-4 py-5 text-sm text-slate-400">
+                <p className="mt-4 rounded-xl border border-[#1b3f63] px-4 py-5 text-sm text-slate-400">
                   No tienes permiso para consultar el catálogo de permisos.
                 </p>
               ) : permissions.length === 0 ? (
-                <p className="mt-4 rounded-xl border border-slate-800 px-4 py-5 text-sm text-slate-400">
+                <p className="mt-4 rounded-xl border border-[#1b3f63] px-4 py-5 text-sm text-slate-400">
                   No hay permisos disponibles en el sistema.
                 </p>
               ) : (
@@ -248,16 +251,16 @@ const RoleFormModal = ({
                     return (
                       <fieldset
                         key={module}
-                        className="rounded-xl border border-slate-800 bg-[#07110d]/60"
+                        className="rounded-xl border border-[#1b3f63] bg-[#050b14]/60"
                       >
                         <legend className="sr-only">{module}</legend>
-                        <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3 border-b border-[#1b3f63] px-4 py-3">
                           <h4 className="font-semibold text-slate-100">{module}</h4>
                           <button
                             type="button"
                             onClick={() => toggleModule(modulePermissionIds)}
                             disabled={!canModifySelectedPermissions}
-                            className="text-xs font-semibold text-lime-300 hover:text-lime-200"
+                            className="text-xs font-semibold text-[#3dff7a] hover:text-[#d7ffe6]"
                           >
                             {selectedCount === modulePermissionIds.length
                               ? "Quitar módulo"
@@ -275,10 +278,10 @@ const RoleFormModal = ({
                                 checked={selectedPermissionIds.includes(permission.id)}
                                 onChange={() => togglePermission(permission.id)}
                                 disabled={!canModifySelectedPermissions}
-                                className="mt-1 accent-lime-400"
+                                className="mt-1 accent-[#3dff7a]"
                               />
                               <span className="min-w-0">
-                                <span className="mr-2 inline-flex rounded bg-lime-400/10 px-1.5 py-0.5 text-[10px] font-bold text-lime-300">
+                                <span className="mr-2 inline-flex rounded bg-[#3dff7a]/10 px-1.5 py-0.5 text-[10px] font-bold text-[#3dff7a]">
                                   {permission.method}
                                 </span>
                                 <span className="break-all font-mono text-xs text-slate-200">
@@ -296,19 +299,19 @@ const RoleFormModal = ({
             </section>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-slate-800 px-6 py-4 sm:px-8">
+          <div className="flex justify-end gap-3 border-t border-[#1b3f63] px-6 py-4 sm:px-8">
             <button
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
+              className="rounded-xl border border-[#245078] px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSaving || (!canEditRole && !canAssignPermissions)}
-              className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f] transition hover:bg-[#62ff96] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? "Guardando..." : "Guardar rol"}
             </button>
@@ -321,7 +324,7 @@ const RoleFormModal = ({
             <section
               aria-labelledby="duplicate-role-warning-title"
               aria-modal="true"
-              className="w-full max-w-lg rounded-2xl border border-amber-400/40 bg-[#0b1711] p-6 text-white shadow-2xl sm:p-8"
+              className="w-full max-w-lg rounded-2xl border border-amber-400/40 bg-[#071321] p-6 text-white shadow-2xl sm:p-8"
               role="alertdialog"
             >
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">
@@ -342,7 +345,7 @@ const RoleFormModal = ({
                   type="button"
                   autoFocus
                   onClick={() => setIsDuplicateWarningOpen(false)}
-                  className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300"
+                  className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f] transition hover:bg-[#62ff96]"
                 >
                   Entendido
                 </button>
@@ -357,8 +360,6 @@ const RoleFormModal = ({
 
 const RoleManagement = () => {
   const {
-    user,
-    logout,
     hasPermission,
     permissionCheckError,
     refreshPermissions,
@@ -597,8 +598,6 @@ const RoleManagement = () => {
     }
   };
 
-  const handleLogout = () => void logout();
-
   const handleSelectMatrixRole = (roleId: number): boolean => {
     if (roleId === selectedRoleId) {
       return true;
@@ -670,7 +669,7 @@ const RoleManagement = () => {
 
   if (permissionCheckError) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#07110d] px-5 text-white">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <section className="max-w-lg rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
           <p role="alert" className="text-sm text-red-300">
             No fue posible consultar tus permisos: {permissionCheckError}
@@ -683,59 +682,19 @@ const RoleManagement = () => {
             Reintentar
           </button>
         </section>
-      </main>
+      </div>
     );
   }
 
   if (!canViewRoles) return <Navigate to={routePaths.dashboard} replace />;
 
   return (
-    <main className="min-h-screen bg-[#07110d] text-white">
-      <header className="border-b border-slate-800 bg-[#0a1510]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <Link to={routePaths.dashboard} className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-400 text-lg font-black text-[#102016]">
-              +
-            </span>
-            <span>
-              <span className="block font-black tracking-tight">
-                Sports System<span className="text-lime-400">+</span>
-              </span>
-              <span className="block text-xs text-slate-500">Administración</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-slate-400 sm:inline">{user?.email}</span>
-            {canCreateRoles && <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-red-400/50 hover:text-red-300"
-            >
-              Cerrar sesión
-            </button>}
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
-        <Link
-          to={routePaths.dashboard}
-          className="text-sm font-semibold text-lime-300 transition hover:text-lime-200"
-        >
-          ← Volver a usuarios
-        </Link>
-        <div className="mt-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-lime-400">
-              Panel de control
-            </p>
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-              Asignar permisos a roles
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              Administra de manera centralizada los permisos que puede ejecutar cada rol del sistema.
-            </p>
-          </div>
+    <div>
+      <PageHeader
+        icon={<ShieldIcon />}
+        title="Asignar permisos a roles"
+        subtitle="Administra de manera centralizada los permisos que puede ejecutar cada rol del sistema."
+        actions={
           <button
             type="button"
             onClick={() => {
@@ -744,15 +703,16 @@ const RoleManagement = () => {
               setSuccessMessage(null);
               setIsCreatingRole(true);
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className={primaryButtonClass}
           >
             <Icon name="plus" className="h-4 w-4" />
             Crear rol
           </button>
-        </div>
+        }
+      />
 
         {successMessage && (
-          <p role="status" className="mt-6 rounded-xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-200">
+          <p role="status" className="mt-6 rounded-xl border border-[#3dff7a]/20 bg-[#3dff7a]/10 px-4 py-3 text-sm text-[#d7ffe6]">
             {successMessage}
           </p>
         )}
@@ -841,8 +801,8 @@ const RoleManagement = () => {
           />
         )}
 
-        <section className="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1711]">
-          <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-5 py-5 sm:px-7">
+        <section className="mt-8 overflow-hidden rounded-2xl border border-[#1b3f63] bg-[#071321]/95 shadow-[0_12px_40px_rgba(0,0,0,0.25)]">
+          <div className="flex items-center justify-between gap-4 border-b border-[#1b3f63] px-5 py-5 sm:px-7">
             <div>
               <h2 className="font-bold">Roles registrados</h2>
               <p className="mt-1 text-sm text-slate-500">
@@ -860,7 +820,7 @@ const RoleManagement = () => {
                 void refreshData();
               }}
               disabled={isRefreshing}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 disabled:opacity-50"
+              className="rounded-lg border border-[#245078] px-3 py-2 text-xs font-semibold text-slate-300 disabled:opacity-50"
             >
               {isRefreshing ? "Actualizando..." : "Actualizar"}
             </button>
@@ -902,13 +862,13 @@ const RoleManagement = () => {
                     <th scope="col" className="px-6 py-4 font-semibold">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody>
                   {roleData.roles.map((role) => {
                     const assignedUsers = assignedUsersByRole.get(role.id) ?? 0;
                     return (
-                      <tr key={role.id} className="transition hover:bg-white/[0.02]">
+                      <tr key={role.id} className="border-t border-white/5 transition hover:bg-white/[0.03]">
                         <td className="px-6 py-5 font-semibold text-slate-100">
-                          <span className="rounded-full border border-lime-400/20 bg-lime-400/10 px-3 py-1 text-xs text-lime-200">
+                          <span className="rounded-full border border-[#3dff7a]/20 bg-[#3dff7a]/10 px-3 py-1 text-xs text-[#d7ffe6]">
                             {role.name}
                           </span>
                         </td>
@@ -931,7 +891,7 @@ const RoleManagement = () => {
                                 setEditingRole(role);
                                 setIsCreatingRole(false);
                               }}
-                              className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 transition hover:bg-lime-400/10"
+                              className="rounded-lg border border-[#3dff7a]/30 px-3 py-2 text-xs font-semibold text-[#d7ffe6] transition hover:bg-[#3dff7a]/10"
                             >
                               Editar
                             </button>}
@@ -961,7 +921,7 @@ const RoleManagement = () => {
                                     window.scrollTo({ top: 0, behavior: "smooth" });
                                   }
                                 }}
-                                className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 transition hover:bg-lime-400/10"
+                                className="rounded-lg border border-[#3dff7a]/30 px-3 py-2 text-xs font-semibold text-[#d7ffe6] transition hover:bg-[#3dff7a]/10"
                               >
                                 Asignar
                               </button>
@@ -975,7 +935,7 @@ const RoleManagement = () => {
                                   setEditingRole(role);
                                   setIsCreatingRole(false);
                                 }}
-                                className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 transition hover:bg-lime-400/10"
+                                className="rounded-lg border border-[#3dff7a]/30 px-3 py-2 text-xs font-semibold text-[#d7ffe6] transition hover:bg-[#3dff7a]/10"
                               >
                                 Permisos
                               </button>
@@ -995,7 +955,6 @@ const RoleManagement = () => {
             </div>
           )}
         </section>
-      </div>
 
       {isCreatePermissionOpen && (
         <CreatePermissionForm
@@ -1084,7 +1043,7 @@ const RoleManagement = () => {
           onSave={handleSaveRole}
         />
       )}
-    </main>
+    </div>
   );
 };
 

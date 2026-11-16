@@ -15,24 +15,24 @@ const SignUp: React.FC = () => {
     message: string;
   } | null>(null);
   const inputClass =
-    "mt-2 w-full rounded-xl border border-slate-700 bg-slate-900/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
+    "mt-2 w-full rounded-xl border border-[#245078] bg-slate-900/70 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20";
 
   return (
-    <main className="min-h-screen bg-[#07110d] text-white">
+    <main className="min-h-screen bg-[#050b14] text-white">
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* Panel deportivo */}
-        <section className="relative isolate flex min-h-[300px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#173d27] via-[#102a1d] to-[#07110d] px-6 py-8 sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
+        <section className="relative isolate flex min-h-[300px] flex-col justify-between overflow-hidden bg-gradient-to-br from-[#173d27] via-[#102a1d] to-[#050b14] px-6 py-8 sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
           <div
             aria-hidden="true"
             className="absolute inset-0 -z-10 bg-[linear-gradient(rgba(190,242,100,.15)_1px,transparent_1px),linear-gradient(90deg,rgba(190,242,100,.15)_1px,transparent_1px)] bg-[length:42px_42px] opacity-20"
           />
-          <div className="absolute -right-24 top-20 -z-10 h-72 w-72 rounded-full bg-lime-400/10 blur-3xl sm:h-96 sm:w-96" />
+          <div className="absolute -right-24 top-20 -z-10 h-72 w-72 rounded-full bg-[#3dff7a]/10 blur-3xl sm:h-96 sm:w-96" />
 
           <Link to="/" className="flex items-center gap-3 self-start">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lime-400 shadow-lg shadow-lime-950/40">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#3dff7a] shadow-lg shadow-[#04210f]/40">
               <svg
                 aria-hidden="true"
-                className="h-6 w-6 text-[#07110d]"
+                className="h-6 w-6 text-[#050b14]"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -51,7 +51,7 @@ const SignUp: React.FC = () => {
             </span>
             <span>
               <span className="block text-xl font-black tracking-tight">
-                Sports System<span className="text-lime-400">+</span>
+                Sports System<span className="text-[#3dff7a]">+</span>
               </span>
               <span className="block text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
                 Vive el deporte
@@ -60,13 +60,13 @@ const SignUp: React.FC = () => {
           </Link>
 
           <div className="relative mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center py-10 text-center lg:py-0">
-            <div className="absolute left-1/2 top-1/2 -z-10 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-lime-300/10 sm:h-80 sm:w-80" />
-            <div className="absolute left-1/2 top-1/2 -z-10 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full border border-lime-300/10 sm:h-[26rem] sm:w-[26rem]" />
+            <div className="absolute left-1/2 top-1/2 -z-10 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#62ff96]/10 sm:h-80 sm:w-80" />
+            <div className="absolute left-1/2 top-1/2 -z-10 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#62ff96]/10 sm:h-[26rem] sm:w-[26rem]" />
 
-            <div className="mb-7 flex h-44 w-44 items-center justify-center rounded-full border border-lime-400/20 bg-lime-400/5 shadow-2xl shadow-black/40 backdrop-blur-sm sm:h-56 sm:w-56">
+            <div className="mb-7 flex h-44 w-44 items-center justify-center rounded-full border border-[#3dff7a]/20 bg-[#3dff7a]/5 shadow-2xl shadow-black/40 backdrop-blur-sm sm:h-56 sm:w-56">
               <svg
                 aria-hidden="true"
-                className="h-24 w-24 text-lime-400 drop-shadow-[0_10px_20px_rgba(163,230,53,0.35)] sm:h-28 sm:w-28"
+                className="h-24 w-24 text-[#3dff7a] drop-shadow-[0_10px_20px_rgba(61,255,122,0.35)] sm:h-28 sm:w-28"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -83,12 +83,12 @@ const SignUp: React.FC = () => {
                 <path d="M9 8.5 5 6.5" />
               </svg>
             </div>
-            <span className="mb-4 rounded-full border border-lime-300/30 bg-lime-300/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-lime-300">
+            <span className="mb-4 rounded-full border border-[#62ff96]/30 bg-[#62ff96]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.22em] text-[#3dff7a]">
               Únete al equipo
             </span>
             <h1 className="max-w-lg text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               Tu próxima
-              <span className="block text-lime-400">gran jugada.</span>
+              <span className="block text-[#3dff7a]">gran jugada.</span>
             </h1>
             <p className="mt-5 max-w-md text-sm leading-6 text-slate-300 sm:text-base">
               Crea tu cuenta y forma parte de una comunidad que vive cada
@@ -106,12 +106,12 @@ const SignUp: React.FC = () => {
           <div className="w-full max-w-md">
             <div className="mb-8 lg:hidden">
               <span className="text-sm font-black tracking-wide">
-                Sports System<span className="text-lime-400">+</span>
+                Sports System<span className="text-[#3dff7a]">+</span>
               </span>
             </div>
 
             <div className="mb-8">
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-lime-400">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-[#3dff7a]">
                 Empieza gratis
               </p>
               <h2 className="text-3xl font-black tracking-tight sm:text-4xl">
@@ -248,7 +248,7 @@ const SignUp: React.FC = () => {
 
               <button
                 type="submit"
-                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3.5 text-sm font-extrabold text-[#102016] shadow-lg shadow-lime-950/20 transition hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300 focus:ring-offset-2 focus:ring-offset-[#07110d]"
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#3dff7a] px-5 py-3.5 text-sm font-extrabold text-[#04210f] shadow-lg shadow-[#04210f]/20 transition hover:bg-[#62ff96] focus:outline-none focus:ring-2 focus:ring-[#62ff96] focus:ring-offset-2 focus:ring-offset-[#050b14]"
               >
                 {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
                 <span className="transition-transform group-hover:translate-x-1">
@@ -269,7 +269,7 @@ const SignUp: React.FC = () => {
 
             <Link
               to="/auth/signin"
-              className="flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900/60 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:border-lime-400/60 hover:bg-slate-800"
+              className="flex w-full items-center justify-center rounded-xl border border-[#245078] bg-slate-900/60 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:border-[#3dff7a]/60 hover:bg-slate-800"
             >
               Iniciar sesión
             </Link>
@@ -292,7 +292,7 @@ const SignUp: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate(routePaths.signIn)}
-                className="rounded-xl bg-lime-400 px-4 py-2.5 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300 focus:outline-none focus:ring-2 focus:ring-lime-300/60"
+                className="rounded-xl bg-[#3dff7a] px-4 py-2.5 text-sm font-extrabold text-[#04210f] transition hover:bg-[#62ff96] focus:outline-none focus:ring-2 focus:ring-[#62ff96]/60"
               >
                 Ir a iniciar sesión
               </button>

@@ -100,14 +100,14 @@ const ProfileFieldsForm = ({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300"
+          className="rounded-xl border border-[#245078] px-5 py-3 text-sm font-semibold text-slate-300"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isSaving}
-          className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] disabled:opacity-60"
+          className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f] disabled:opacity-60"
         >
           {isSaving ? "Guardando..." : "Guardar perfil"}
         </button>

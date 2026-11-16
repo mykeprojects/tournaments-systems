@@ -13,7 +13,7 @@ import { createPermission } from "../../services/roleService";
 import { getUserServiceErrorMessage } from "../../services/userService";
 
 const INPUT_CLASS =
-  "mt-2 w-full rounded-xl border border-slate-700 bg-[#0b1711] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
+  "mt-2 w-full rounded-xl border border-[#245078] bg-[#071321] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20";
 
 type CreatePermissionFormProps = {
   onClose: () => void;
@@ -108,11 +108,11 @@ const CreatePermissionForm = ({ onClose, onCreated }: CreatePermissionFormProps)
       <section
         aria-labelledby="create-permission-title"
         aria-modal="true"
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-[#0b1711] text-white shadow-2xl"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#245078] bg-[#071321] text-white shadow-2xl"
         role="dialog"
       >
-        <div className="border-b border-slate-800 px-6 py-5">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-lime-400">
+        <div className="border-b border-[#1b3f63] px-6 py-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#3dff7a]">
             Catálogo
           </p>
           <h2 id="create-permission-title" className="mt-2 text-2xl font-black">
@@ -190,13 +190,13 @@ const CreatePermissionForm = ({ onClose, onCreated }: CreatePermissionFormProps)
               {MATRIX_ACTIONS.map((action) => (
                 <label
                   key={action}
-                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-800 px-3 py-2.5 text-sm text-slate-200 hover:border-lime-400/30"
+                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-[#1b3f63] px-3 py-2.5 text-sm text-slate-200 hover:border-[#3dff7a]/30"
                 >
                   <input
                     type="checkbox"
                     checked={actions.includes(action)}
                     onChange={() => toggleAction(action)}
-                    className="accent-lime-400"
+                    className="accent-[#3dff7a]"
                   />
                   {action}
                 </label>
@@ -205,7 +205,7 @@ const CreatePermissionForm = ({ onClose, onCreated }: CreatePermissionFormProps)
           </fieldset>
 
           {drafts.length > 0 && (
-            <div className="rounded-xl border border-slate-800 bg-[#07110d] px-4 py-3">
+            <div className="rounded-xl border border-[#1b3f63] bg-[#050b14] px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                 Permisos que se van a crear
               </p>
@@ -224,14 +224,14 @@ const CreatePermissionForm = ({ onClose, onCreated }: CreatePermissionFormProps)
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
+              className="rounded-xl border border-[#245078] px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300 disabled:opacity-60"
+              className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f] transition hover:bg-[#62ff96] disabled:opacity-60"
             >
               {isSaving ? "Registrando..." : "Registrar permisos"}
             </button>

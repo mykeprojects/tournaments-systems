@@ -9,7 +9,7 @@
   -moz-osx-font-smoothing: grayscale;
 
   color: #f8fafc;
-  background: #07110d;
+  background: #050b14;
 }
 
 * {
@@ -30,8 +30,18 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+.sports-canvas {
+  background-color: #050b14;
+  background-image:
+    radial-gradient(ellipse at 78% 100%, rgba(18, 92, 42, 0.42), transparent 52%),
+    radial-gradient(ellipse at 8% 0%, rgba(14, 48, 96, 0.55), transparent 46%),
+    linear-gradient(180deg, rgba(5, 12, 24, 0.2), rgba(5, 11, 20, 0.82));
 }
 
 #root {

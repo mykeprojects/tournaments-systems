@@ -10,9 +10,9 @@ const ForbiddenContent = () => {
   const { user, permissionCheckError, logout } = useAuth();
 
   return (
-  <main className="flex min-h-screen items-center justify-center bg-[#07110d] px-5 text-white">
-    <section className="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0b1711] p-8 text-center">
-      <p className="text-xs font-bold uppercase tracking-[0.24em] text-lime-400">
+  <main className="flex min-h-screen items-center justify-center bg-[#050b14] px-5 text-white">
+    <section className="w-full max-w-lg rounded-2xl border border-[#1b3f63] bg-[#071321] p-8 text-center">
+      <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#3dff7a]">
         Sports System+
       </p>
       <h1 className="mt-4 text-3xl font-black">Acceso no permitido</h1>
@@ -27,7 +27,7 @@ const ForbiddenContent = () => {
         <Link
           to={routePaths.signIn}
           onClick={() => void logout()}
-          className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-bold text-[#102016] transition hover:bg-lime-300"
+          className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-bold text-[#04210f] transition hover:bg-[#62ff96]"
         >
           Cerrar sesión
         </Link>

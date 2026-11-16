@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { primaryButtonClass, fieldClass } from "../../sports/format";
+import { UsersIcon } from "../../sports/glyphs";
+import { PageHeader } from "../../sports/ui";
 import UserDirectory from "../../components/admin/UserDirectory";
 import ProfileFieldsForm from "../../components/profile/ProfileFieldsForm";
 import UserAuthorizationPanel from "../../components/profile/UserAuthorizationPanel";
@@ -10,7 +12,6 @@ import {
 } from "../../domain/profile/phoneNumber";
 import { isAdministratorRole } from "../../services/roleService";
 import { useAuth } from "../../hooks/useAuth";
-import { routePaths } from "../../routes/routePaths";
 import {
   createProfile,
   createUser,
@@ -46,13 +47,11 @@ dateBeforeToday.setDate(dateBeforeToday.getDate() - 1);
 const LATEST_BIRTH_DATE = `${dateBeforeToday.getFullYear()}-${String(
   dateBeforeToday.getMonth() + 1
 ).padStart(2, "0")}-${String(dateBeforeToday.getDate()).padStart(2, "0")}`;
-const INPUT_CLASS =
-  "mt-2 w-full rounded-xl border border-slate-700 bg-[#0b1711] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
+const INPUT_CLASS = fieldClass();
 
 const Dashboard = () => {
   const {
     user,
-    logout,
     hasPermission,
     permissionCheckError,
     refreshPermissions,
@@ -558,7 +557,6 @@ const Dashboard = () => {
     </dl>
   );
 
-  const handleLogout = () => void logout();
   const handleRefreshUsers = () => {
     if (!canViewUsers) return;
     setListError(null);
@@ -582,7 +580,7 @@ const Dashboard = () => {
 
   const renderOwnProfileSection = () => {
     return (
-      <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
+      <section className="mb-8 rounded-2xl border border-[#1b3f63] bg-[#071321] p-5 sm:p-7">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div>
             <h2 className="text-xl font-bold">Datos de la cuenta</h2>
@@ -608,7 +606,7 @@ const Dashboard = () => {
                 setIsEditingProfile(true);
               }}
               disabled={isLoadingProfile || Boolean(profileError)}
-              className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016]"
+              className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f]"
             >
               {profile ? "Editar perfil" : "Crear perfil"}
             </button>
@@ -616,7 +614,7 @@ const Dashboard = () => {
         </div>
 
         {successMessage && (
-          <p role="status" className="mt-5 rounded-xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-200">
+          <p role="status" className="mt-5 rounded-xl border border-[#3dff7a]/20 bg-[#3dff7a]/10 px-4 py-3 text-sm text-[#d7ffe6]">
             {successMessage}
           </p>
         )}
@@ -664,7 +662,7 @@ const Dashboard = () => {
           </p>
         )}
         {!isEditingProfile && !isLoadingProfile && !profileError && (
-          <div className="mt-8 border-t border-slate-800 pt-6">
+          <div className="mt-8 border-t border-[#1b3f63] pt-6">
             <h3 className="text-base font-bold">Roles y permisos</h3>
             <p className="mt-1 text-sm text-slate-500">
               Accesos que tiene tu cuenta según los roles asignados.
@@ -677,54 +675,36 @@ const Dashboard = () => {
   };
 
   return (
-    <main className="min-h-screen bg-[#07110d] text-white">
-      <header className="border-b border-slate-800 bg-[#0a1510]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-400 text-lg font-black text-[#102016]">
-              +
-            </span>
-            <div>
-              <p className="font-black tracking-tight">
-                Sports System<span className="text-lime-400">+</span>
-              </p>
-              <p className="text-xs text-slate-500">
-                {canViewUsers ? "Administración" : "Mi cuenta"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-slate-400 sm:inline">{user?.email}</span>
+    <div>
+      <PageHeader
+        icon={<UsersIcon />}
+        title={canViewUsers ? "Gestión de usuarios" : "Mi perfil"}
+        subtitle={
+          canViewUsers
+            ? "Consulta las cuentas registradas y administra sus perfiles."
+            : "Consulta tus datos y actualiza tu teléfono y foto de perfil."
+        }
+        actions={
+          canCreateUsers ? (
             <button
               type="button"
-              onClick={handleLogout}
-              className="rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 transition hover:border-red-400/50 hover:text-red-300"
+              onClick={() => {
+                setIsCreatingUser((open) => !open);
+                setFormError(null);
+                setSuccessMessage(null);
+              }}
+              className={primaryButtonClass}
             >
-              Cerrar sesión
+              {isCreatingUser ? "Cancelar" : "+ Crear usuario"}
             </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
-        <div className="mb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.24em] text-lime-400">
-            Panel de control
-          </p>
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-            {canViewUsers ? "Gestión de usuarios" : "Mi perfil"}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            {canViewUsers
-              ? "Consulta las cuentas registradas y administra sus perfiles."
-              : "Consulta tus datos y actualiza tu teléfono y foto de perfil."}
-          </p>
-        </div>
+          ) : undefined
+        }
+      />
 
         {!canViewUsers && renderOwnProfileSection()}
 
         {twoFactorStatus?.available && (
-          <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
+          <section className="mb-8 rounded-2xl border border-[#1b3f63] bg-[#071321] p-5 sm:p-7">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <h2 className="text-xl font-bold">Autenticación de dos factores</h2>
@@ -738,7 +718,7 @@ const Dashboard = () => {
                 type="button"
                 onClick={() => void handleToggleTwoFactor()}
                 disabled={isUpdatingTwoFactor}
-                className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] disabled:opacity-60"
+                className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f] disabled:opacity-60"
               >
                 {isUpdatingTwoFactor
                   ? "Guardando..."
@@ -748,7 +728,7 @@ const Dashboard = () => {
               </button>
             </div>
             {twoFactorSuccess && (
-              <p role="status" className="mt-4 rounded-xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-200">
+              <p role="status" className="mt-4 rounded-xl border border-[#3dff7a]/20 bg-[#3dff7a]/10 px-4 py-3 text-sm text-[#d7ffe6]">
                 {twoFactorSuccess}
               </p>
             )}
@@ -775,33 +755,8 @@ const Dashboard = () => {
           </section>
         ) : canViewUsers || canCreateUsers || canViewRoles ? (
           <>
-            <div className="mb-6 flex flex-wrap justify-end gap-3">
-              {canViewRoles && (
-                <Link
-                  to={routePaths.roles}
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-bold text-slate-200 transition hover:border-lime-400/40 hover:text-lime-200"
-                >
-                  Ver roles
-                </Link>
-              )}
-              {canCreateUsers && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreatingUser((open) => !open);
-                    setFormError(null);
-                    setSuccessMessage(null);
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300"
-                >
-                  <span aria-hidden="true" className="text-lg leading-none">+</span>
-                  {isCreatingUser ? "Cancelar" : "Crear usuario"}
-                </button>
-              )}
-            </div>
-
             {successMessage && (
-              <p role="status" className="mb-5 rounded-xl border border-lime-400/20 bg-lime-400/10 px-4 py-3 text-sm text-lime-200">
+              <p role="status" className="mb-5 rounded-xl border border-[#3dff7a]/20 bg-[#3dff7a]/10 px-4 py-3 text-sm text-[#d7ffe6]">
                 {successMessage}
               </p>
             )}
@@ -812,7 +767,7 @@ const Dashboard = () => {
             )}
 
             {isCreatingUser && canCreateUsers && (
-              <section className="mb-8 rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-7">
+              <section className="mb-8 rounded-2xl border border-[#1b3f63] bg-[#071321] p-5 sm:p-7">
                 <h2 className="text-xl font-bold">Nuevo usuario</h2>
                 {formError && (
                   <p role="alert" className="mt-4 text-sm text-red-300">{formError}</p>
@@ -878,7 +833,7 @@ const Dashboard = () => {
                     <button
                       type="submit"
                       disabled={isSubmittingUser}
-                      className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] disabled:opacity-60"
+                      className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f] disabled:opacity-60"
                     >
                       {isSubmittingUser ? "Creando..." : "Guardar usuario"}
                     </button>
@@ -957,8 +912,7 @@ const Dashboard = () => {
             )}
           </>
         ) : null}
-      </div>
-    </main>
+    </div>
   );
 };
 

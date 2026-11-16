@@ -70,10 +70,10 @@ const MatrixCheck = ({
     }
     className={`mx-auto flex h-8 w-8 items-center justify-center rounded-md border transition ${
       unavailable
-        ? "cursor-not-allowed border-slate-800 bg-transparent text-slate-700"
+        ? "cursor-not-allowed border-[#1b3f63] bg-transparent text-slate-700"
         : checked
-          ? "border-lime-400/70 bg-lime-400 text-[#102016] shadow-[0_0_12px_rgba(163,230,53,0.35)]"
-          : "border-slate-600 bg-transparent text-slate-500 hover:border-lime-400/50"
+          ? "border-[#3dff7a]/70 bg-[#3dff7a] text-[#04210f] shadow-[0_0_12px_rgba(61,255,122,0.35)]"
+          : "border-slate-600 bg-transparent text-slate-500 hover:border-[#3dff7a]/50"
     } disabled:cursor-not-allowed disabled:opacity-70`}
   >
     {!unavailable && checked && <Icon name="check" className="h-4 w-4" />}
@@ -121,7 +121,7 @@ const RolePermissionMatrix = ({
   return (
     <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_20.5rem]">
       <div className="min-w-0">
-        <div className="rounded-2xl border border-slate-800 bg-[#0b1711] p-5 sm:p-6">
+        <div className="rounded-2xl border border-[#1b3f63] bg-[#071321] p-5 sm:p-6">
           <label
             htmlFor="selected-role"
             className="text-sm font-semibold text-slate-200"
@@ -133,7 +133,7 @@ const RolePermissionMatrix = ({
             value={selectedRoleId ?? ""}
             onChange={(event) => onSelectRole(Number(event.target.value))}
             disabled={roles.length === 0}
-            className="mt-2 h-11 w-full rounded-xl border border-slate-700 bg-[#07110d] px-4 text-sm text-white outline-none transition focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20"
+            className="mt-2 h-11 w-full rounded-xl border border-[#245078] bg-[#050b14] px-4 text-sm text-white outline-none transition focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20"
           >
             {roles.length === 0 ? (
               <option value="">Sin roles registrados</option>
@@ -152,7 +152,7 @@ const RolePermissionMatrix = ({
               onClick={onLoad}
               disabled={isRefreshing || isSaving}
               title="Vuelve a consultar el catálogo y los permisos asignados al rol"
-              className={`${TOOLBAR_BUTTON} border border-slate-500 text-white hover:border-lime-400/60 hover:bg-white/[0.04]`}
+              className={`${TOOLBAR_BUTTON} border border-slate-500 text-white hover:border-[#3dff7a]/60 hover:bg-white/[0.04]`}
             >
               <Icon name="download" className="h-4 w-4" />
               {isRefreshing ? "Cargando..." : "Cargar permisos"}
@@ -161,7 +161,7 @@ const RolePermissionMatrix = ({
               <button
                 type="button"
                 onClick={onCreatePermission}
-                className={`${TOOLBAR_BUTTON} border border-lime-400/30 text-lime-200 hover:bg-lime-400/10`}
+                className={`${TOOLBAR_BUTTON} border border-[#3dff7a]/30 text-[#d7ffe6] hover:bg-[#3dff7a]/10`}
               >
                 <Icon name="plus" className="h-4 w-4" />
                 Crear permiso
@@ -172,7 +172,7 @@ const RolePermissionMatrix = ({
                 type="button"
                 onClick={() => onEditPermission()}
                 disabled={permissions.length === 0}
-                className={`${TOOLBAR_BUTTON} border border-lime-400/30 text-lime-200 hover:bg-lime-400/10`}
+                className={`${TOOLBAR_BUTTON} border border-[#3dff7a]/30 text-[#d7ffe6] hover:bg-[#3dff7a]/10`}
               >
                 <Icon name="pencil" className="h-4 w-4" />
                 Editar permiso
@@ -193,7 +193,7 @@ const RolePermissionMatrix = ({
               type="button"
               onClick={onSave}
               disabled={!canEditMatrix || !isDirty || isSaving}
-              className={`${TOOLBAR_BUTTON} bg-lime-400 font-extrabold text-[#102016] hover:bg-lime-300`}
+              className={`${TOOLBAR_BUTTON} bg-[#3dff7a] font-extrabold text-[#04210f] hover:bg-[#62ff96]`}
             >
               <Icon name="save" className="h-4 w-4" />
               {isSaving ? "Guardando..." : "Guardar cambios"}
@@ -213,7 +213,7 @@ const RolePermissionMatrix = ({
             {successMessage && (
               <p
                 role="status"
-                className="flex items-center gap-2 rounded-xl border border-lime-400/30 bg-lime-400/10 px-4 py-3 text-sm text-lime-200"
+                className="flex items-center gap-2 rounded-xl border border-[#3dff7a]/30 bg-[#3dff7a]/10 px-4 py-3 text-sm text-[#d7ffe6]"
               >
                 <Icon name="check" className="h-4 w-4 shrink-0" />
                 {successMessage}
@@ -243,9 +243,9 @@ const RolePermissionMatrix = ({
           </div>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1711]">
-          <div className="border-b border-slate-800 px-5 py-4 sm:px-6">
-            <h2 className="text-lg font-black text-lime-300">
+        <div className="mt-6 overflow-hidden rounded-2xl border border-[#1b3f63] bg-[#071321]">
+          <div className="border-b border-[#1b3f63] px-5 py-4 sm:px-6">
+            <h2 className="text-lg font-black text-[#3dff7a]">
               Matriz de permisos del rol
             </h2>
           </div>
@@ -301,9 +301,9 @@ const RolePermissionMatrix = ({
       </div>
 
       <aside className="space-y-4">
-        <section className="rounded-2xl border border-slate-800 bg-[#0b1711] p-5">
+        <section className="rounded-2xl border border-[#1b3f63] bg-[#071321] p-5">
           <h2 className="flex items-center gap-2 font-bold">
-            <Icon name="shield" className="h-4 w-4 text-lime-300" />
+            <Icon name="shield" className="h-4 w-4 text-[#3dff7a]" />
             Resumen del rol
           </h2>
           <dl className="mt-5 space-y-3 text-sm">
@@ -313,8 +313,8 @@ const RolePermissionMatrix = ({
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt className="text-slate-400">Estado:</dt>
-              <dd className="inline-flex items-center gap-1.5 rounded-full bg-lime-400/10 px-2.5 py-1 text-xs font-semibold text-lime-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-lime-400" />
+              <dd className="inline-flex items-center gap-1.5 rounded-full bg-[#3dff7a]/10 px-2.5 py-1 text-xs font-semibold text-[#3dff7a]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#3dff7a]" />
                 Activo
               </dd>
             </div>
@@ -368,11 +368,11 @@ const RolePermissionMatrix = ({
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-[#0b1711] p-5">
+        <section className="rounded-2xl border border-[#1b3f63] bg-[#071321] p-5">
           <h3 className="font-bold">Leyenda</h3>
           <ul className="mt-3 space-y-2 text-sm text-slate-300">
             <li className="flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded border border-lime-400/70 bg-lime-400 text-[#102016]">
+              <span className="flex h-5 w-5 items-center justify-center rounded border border-[#3dff7a]/70 bg-[#3dff7a] text-[#04210f]">
                 <Icon name="check" className="h-3.5 w-3.5" />
               </span>
               Permiso asignado
@@ -384,9 +384,9 @@ const RolePermissionMatrix = ({
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-[#0b1711] p-5">
+        <section className="rounded-2xl border border-[#1b3f63] bg-[#071321] p-5">
           <h3 className="flex items-center gap-2 font-bold">
-            <Icon name="scale" className="h-4 w-4 text-lime-300" />
+            <Icon name="scale" className="h-4 w-4 text-[#3dff7a]" />
             Reglas de acceso
           </h3>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">
@@ -426,13 +426,13 @@ const SummaryStat = ({
 }) => {
   const toneClass =
     tone === "success"
-      ? "border-lime-400/30 text-lime-300"
+      ? "border-[#3dff7a]/30 text-[#3dff7a]"
       : tone === "danger"
         ? "border-red-400/30 text-red-300"
-        : "border-slate-700 text-slate-200";
+        : "border-[#245078] text-slate-200";
 
   return (
-    <div className={`rounded-xl border bg-[#07110d] px-2 py-3 ${toneClass}`}>
+    <div className={`rounded-xl border bg-[#050b14] px-2 py-3 ${toneClass}`}>
       <Icon name={icon} className="mx-auto h-4 w-4" />
       <p className="mt-1 text-xl font-black">{value}</p>
       <p className="mt-1 text-[10px] font-semibold uppercase leading-4 tracking-wide text-slate-400">
@@ -468,17 +468,17 @@ const ModuleRows = ({
   onDeletePermission: (permission?: Permission) => void;
 }) => (
   <>
-    <tr className="bg-[#07110d]">
+    <tr className="bg-[#050b14]">
       <th
         colSpan={MATRIX_ACTIONS.length + 1}
         scope="colgroup"
-        className="px-5 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-lime-300 sm:px-6"
+        className="px-5 py-3 text-left text-xs font-bold uppercase tracking-[0.18em] text-[#3dff7a] sm:px-6"
       >
         {module}
       </th>
     </tr>
     {resources.map((resource) => (
-      <tr key={resource.key} className="border-t border-slate-800">
+      <tr key={resource.key} className="border-t border-[#1b3f63]">
         <th
           scope="row"
           className="px-5 py-3.5 font-medium text-slate-100 sm:px-6"
@@ -486,7 +486,7 @@ const ModuleRows = ({
           <span className="inline-flex items-center gap-2">
             <Icon
               name={iconForResource(resource.key)}
-              className="h-4 w-4 text-lime-300"
+              className="h-4 w-4 text-[#3dff7a]"
             />
             {resource.label}
           </span>
@@ -512,7 +512,7 @@ const ModuleRows = ({
                           type="button"
                           onClick={() => onEditPermission(cellPermissions[0])}
                           title={`Editar permiso ${action} de ${resource.label}`}
-                          className="text-slate-500 transition hover:text-lime-300"
+                          className="text-slate-500 transition hover:text-[#3dff7a]"
                         >
                           <Icon name="pencil" className="h-3.5 w-3.5" />
                           <span className="sr-only">

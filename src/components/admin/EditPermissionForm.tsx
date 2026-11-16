@@ -12,7 +12,7 @@ import {
 import { getUserServiceErrorMessage } from "../../services/userService";
 
 const INPUT_CLASS =
-  "mt-2 w-full rounded-xl border border-slate-700 bg-[#0b1711] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/20";
+  "mt-2 w-full rounded-xl border border-[#245078] bg-[#071321] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20";
 
 type EditPermissionFormProps = {
   permissions: Permission[];
@@ -146,11 +146,11 @@ const EditPermissionForm = ({
       <section
         aria-labelledby="edit-permission-title"
         aria-modal="true"
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-700 bg-[#0b1711] text-white shadow-2xl"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#245078] bg-[#071321] text-white shadow-2xl"
         role="dialog"
       >
-        <div className="border-b border-slate-800 px-6 py-5">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-lime-400">
+        <div className="border-b border-[#1b3f63] px-6 py-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#3dff7a]">
             Catálogo
           </p>
           <h2 id="edit-permission-title" className="mt-2 text-2xl font-black">
@@ -173,7 +173,7 @@ const EditPermissionForm = ({
           )}
 
           {catalog.length === 0 ? (
-            <p className="rounded-xl border border-slate-800 px-4 py-5 text-sm text-slate-400">
+            <p className="rounded-xl border border-[#1b3f63] px-4 py-5 text-sm text-slate-400">
               No hay permisos registrados para editar.
             </p>
           ) : (
@@ -274,14 +274,14 @@ const EditPermissionForm = ({
               type="button"
               onClick={onClose}
               disabled={isBusy}
-              className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
+              className="rounded-xl border border-[#245078] px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-500 disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isBusy || catalog.length === 0}
-              className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016] transition hover:bg-lime-300 disabled:opacity-60"
+              className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f] transition hover:bg-[#62ff96] disabled:opacity-60"
             >
               {isBusy ? "Guardando..." : "Guardar permiso"}
             </button>

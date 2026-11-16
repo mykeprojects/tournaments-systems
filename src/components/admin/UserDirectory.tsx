@@ -95,8 +95,8 @@ const UserDirectory = ({
   const showProfile = Boolean(viewedUser || viewingUserId || profileViewError);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-[#0b1711]">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-5 py-5 sm:px-7">
+    <section className="overflow-hidden rounded-2xl border border-[#1b3f63] bg-[#071321]/95 shadow-[0_12px_40px_rgba(0,0,0,0.25)]">
+      <div className="flex items-center justify-between gap-4 border-b border-[#1b3f63] px-5 py-5 sm:px-7">
         <div>
           <h2 className="font-bold">
             {showProfile ? "Perfil de usuario" : "Usuarios registrados"}
@@ -117,7 +117,7 @@ const UserDirectory = ({
           <button
             type="button"
             onClick={onCloseProfile}
-            className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white"
+            className="rounded-lg border border-[#245078] px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white"
           >
             Cerrar perfil
           </button>
@@ -126,7 +126,7 @@ const UserDirectory = ({
             type="button"
             onClick={onRefresh}
             disabled={isLoadingUsers}
-            className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 disabled:opacity-50"
+            className="rounded-lg border border-[#245078] px-3 py-2 text-xs font-semibold text-slate-300 disabled:opacity-50"
           >
             Actualizar
           </button>
@@ -154,7 +154,7 @@ const UserDirectory = ({
             </p>
           ) : (
             <table className="w-full min-w-[1080px] text-left text-sm">
-                <thead className="sticky top-0 z-10 bg-[#0b1711] text-xs uppercase tracking-wider text-slate-500">
+                <thead className="sticky top-0 z-10 bg-[#071321] text-[11px] uppercase tracking-wide text-slate-400">
                   <tr>
                     <th scope="col" className="px-6 py-4 font-semibold">
                       ID
@@ -175,11 +175,11 @@ const UserDirectory = ({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody>
                   {users.map((listedUser) => (
                     <tr
                       key={listedUser.id}
-                      className="transition hover:bg-white/[0.02]"
+                      className="border-t border-white/5 transition hover:bg-white/[0.03]"
                     >
                       <td className="px-6 py-4 text-slate-500">{listedUser.id}</td>
                       <td className="px-6 py-4 font-semibold text-slate-200">
@@ -209,7 +209,7 @@ const UserDirectory = ({
                                 return (
                                   <span
                                     key={assignment.id}
-                                    className="inline-flex items-center gap-1 rounded-full border border-lime-400/20 bg-lime-400/10 py-1 pl-2.5 pr-1 text-xs text-lime-200"
+                                    className="inline-flex items-center gap-1 rounded-full border border-[#3dff7a]/20 bg-[#3dff7a]/10 py-1 pl-2.5 pr-1 text-xs text-[#d7ffe6]"
                                   >
                                     {assignment.role.name}
                                     <button
@@ -234,7 +234,7 @@ const UserDirectory = ({
                                           ? `${ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE} Rol de ${listedUser.name}.`
                                           : `Quitar rol ${assignment.role.name} de ${listedUser.name}`
                                       }
-                                      className="flex h-5 w-5 items-center justify-center rounded-full text-lime-100 transition hover:bg-red-500/20 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
+                                      className="flex h-5 w-5 items-center justify-center rounded-full text-[#eafff3] transition hover:bg-red-500/20 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                       {isRemoving ? "…" : "×"}
                                     </button>
@@ -258,7 +258,7 @@ const UserDirectory = ({
                                 onSelectRole(listedUser.id, event.target.value)
                               }
                               disabled={isLoadingRoleData || roles.length === 0}
-                              className="min-w-36 rounded-lg border border-slate-700 bg-[#0b1711] px-3 py-2 text-xs text-white disabled:opacity-50"
+                              className="min-w-36 rounded-lg border border-[#245078] bg-[#071321] px-3 py-2 text-xs text-white disabled:opacity-50"
                             >
                               <option value="">
                                 {isLoadingRoleData
@@ -288,7 +288,7 @@ const UserDirectory = ({
                                 assigningRoleUserId === listedUser.id ||
                                 !selectedRoleByUser[listedUser.id]
                               }
-                              className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 disabled:cursor-not-allowed disabled:opacity-40"
+                              className="rounded-lg border border-[#3dff7a]/30 px-3 py-2 text-xs font-semibold text-[#d7ffe6] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               {assigningRoleUserId === listedUser.id
                                 ? "Asignando..."
@@ -304,7 +304,7 @@ const UserDirectory = ({
                               type="button"
                               onClick={() => onViewProfile(listedUser)}
                               disabled={viewingUserId === listedUser.id}
-                              className="rounded-lg border border-lime-400/30 px-3 py-2 text-xs font-semibold text-lime-200 disabled:opacity-50"
+                              className="rounded-lg border border-[#3dff7a]/30 px-3 py-2 text-xs font-semibold text-[#d7ffe6] disabled:opacity-50"
                             >
                               {viewingUserId === listedUser.id
                                 ? "Cargando..."
@@ -359,7 +359,7 @@ const UserDirectory = ({
                     <button
                       type="button"
                       onClick={onStartEditViewedProfile}
-                      className="rounded-xl bg-lime-400 px-5 py-3 text-sm font-extrabold text-[#102016]"
+                      className="rounded-xl bg-[#3dff7a] px-5 py-3 text-sm font-extrabold text-[#04210f]"
                     >
                       {viewedUser.profile ? "Editar perfil" : "Crear perfil"}
                     </button>
@@ -384,7 +384,7 @@ const UserDirectory = ({
                   </p>
                 )}
                 {!isEditingViewedProfile && (
-                  <div className="mt-8 border-t border-slate-800 pt-6">
+                  <div className="mt-8 border-t border-[#1b3f63] pt-6">
                     <h3 className="text-base font-bold">Roles y permisos</h3>
                     <p className="mt-1 text-sm text-slate-500">
                       Accesos que tiene esta cuenta según los roles asignados.

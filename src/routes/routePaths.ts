@@ -9,4 +9,12 @@ export const routePaths = {
   admin: "/admin",
   roles: "/admin/roles",
   forbidden: "/forbidden",
+  sports: "/gestion/deportes",
+  sportsTeams: "/gestion/equipos",
+  sportsTeamSports: "/gestion/equipos/asociar",
+  sportsRoster: "/gestion/equipos/plantilla",
+  sportsPlayers: "/gestion/jugadores",
+  sportsSkills: "/gestion/habilidades",
+  sportsSkillAssign: "/gestion/habilidades/asignar",
+  sportsProfile: "/gestion/perfil",
 } as const;
