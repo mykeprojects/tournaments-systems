@@ -32,7 +32,7 @@ type RemoteTeam = {
   status: Status;
   createdAt: string;
   color: string;
-  deportes: { id: number }[];
+  sports: { id: number }[];
 };
 
 type RemotePlayer = {
@@ -72,10 +72,10 @@ type RemoteSkill = {
 
 type MutationBody = {
   message: string;
-  deporte?: { id: number };
-  equipo?: { id: number };
-  jugador?: { id: number };
-  habilidad?: { id: number };
+  sport?: { id: number };
+  team?: { id: number };
+  player?: { id: number };
+  skill?: { id: number };
 };
 
 export const sportClient = axios.create({
@@ -103,38 +103,38 @@ const glyphOf = (value: string): SkillGlyph => (GLYPHS.has(value as SkillGlyph) 
 
 export function readSportError(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message;
-    if (typeof message === "string" && message.trim()) return message;
-    if (Array.isArray(message) && typeof message[0] === "string") return message[0];
     if (!error.response) return "No fue posible conectar con el servicio deportivo.";
     if (error.response.status === 401) return "La sesión no es válida para el servicio deportivo.";
     if (error.response.status === 403) return "No tienes permiso para esta operación.";
     if (error.response.status === 503) return "El servicio de seguridad no está disponible.";
+    const message = error.response?.data?.message;
+    if (typeof message === "string" && message.trim()) return message;
+    if (Array.isArray(message) && typeof message[0] === "string") return message[0];
   }
   return "No fue posible completar la operación.";
 }
 
 export function createdId(body: MutationBody): string | undefined {
-  const id = body.deporte?.id ?? body.equipo?.id ?? body.jugador?.id ?? body.habilidad?.id;
+  const id = body.sport?.id ?? body.team?.id ?? body.player?.id ?? body.skill?.id;
   return id == null ? undefined : String(id);
 }
 
 export async function loadCatalog(): Promise<CatalogData> {
   const [sports, teams, players, skills] = await Promise.all([
-    sportClient.get<RemoteSport[]>("/deportes"),
-    sportClient.get<RemoteTeam[]>("/equipos"),
-    sportClient.get<RemotePlayer[]>("/jugadores"),
-    sportClient.get<RemoteSkill[]>("/habilidades"),
+    sportClient.get<RemoteSport[]>("/sports"),
+    sportClient.get<RemoteTeam[]>("/teams"),
+    sportClient.get<RemotePlayer[]>("/players"),
+    sportClient.get<RemoteSkill[]>("/skills"),
   ]);
   const [rosters, profiles] = await Promise.all([
     Promise.all(
       teams.data.map((team) =>
-        sportClient.get<{ actuales: RemoteContract[]; historial: RemoteContract[] }>(`/equipos/${team.id}/plantilla`)
+        sportClient.get<{ actuales: RemoteContract[]; historial: RemoteContract[] }>(`/teams/${team.id}/roster`)
       )
     ),
     Promise.all(
       players.data.map((player) =>
-        sportClient.get<{ habilidades: { id: number; score: number }[] }>(`/jugadores/${player.id}/perfil`)
+        sportClient.get<{ skills: { id: number; score: number }[] }>(`/players/${player.id}/profile`)
       )
     ),
   ]);
@@ -156,10 +156,10 @@ export async function loadCatalog(): Promise<CatalogData> {
   }
 
   const teamSports: TeamSport[] = teams.data.flatMap((team) =>
-    team.deportes.map((sport) => ({ teamId: String(team.id), sportId: String(sport.id) }))
+    team.sports.map((sport) => ({ teamId: String(team.id), sportId: String(sport.id) }))
   );
   const playerSkills: PlayerSkill[] = players.data.flatMap((player, index) =>
-    profiles[index].data.habilidades.map((skill) => ({
+    profiles[index].data.skills.map((skill) => ({
       playerId: String(player.id),
       skillId: String(skill.id),
       score: skill.score,
@@ -226,7 +226,7 @@ const sportBody = (input: SportInput) => ({
   category: input.category,
   description: input.description,
   status: input.status,
-  subdeportes: input.subdeportes,
+  subsports: input.subsports,
 });
 
 const teamBody = (input: TeamInput) => ({
@@ -262,40 +262,40 @@ const skillBody = (input: SkillInput) => ({
 export const catalogRequests = {
   saveSport: (input: SportInput) =>
     input.id
-      ? sportClient.patch<MutationBody>(`/deportes/${input.id}`, sportBody(input))
-      : sportClient.post<MutationBody>("/deportes", sportBody(input)),
-  deleteSport: (id: string) => sportClient.delete<MutationBody>(`/deportes/${id}`),
+      ? sportClient.patch<MutationBody>(`/sports/${input.id}`, sportBody(input))
+      : sportClient.post<MutationBody>("/sports", sportBody(input)),
+  deleteSport: (id: string) => sportClient.delete<MutationBody>(`/sports/${id}`),
   saveTeam: (input: TeamInput) =>
     input.id
-      ? sportClient.patch<MutationBody>(`/equipos/${input.id}`, teamBody(input))
-      : sportClient.post<MutationBody>("/equipos", teamBody(input)),
-  deleteTeam: (id: string) => sportClient.delete<MutationBody>(`/equipos/${id}`),
+      ? sportClient.patch<MutationBody>(`/teams/${input.id}`, teamBody(input))
+      : sportClient.post<MutationBody>("/teams", teamBody(input)),
+  deleteTeam: (id: string) => sportClient.delete<MutationBody>(`/teams/${id}`),
   associateSport: (teamId: string, sportId: string) =>
-    sportClient.post<MutationBody>(`/equipos/${teamId}/deportes`, { deporteId: Number(sportId) }),
+    sportClient.post<MutationBody>(`/teams/${teamId}/sports`, { sportId: Number(sportId) }),
   removeSportAssociation: (teamId: string, sportId: string) =>
-    sportClient.delete<MutationBody>(`/equipos/${teamId}/deportes/${sportId}`),
+    sportClient.delete<MutationBody>(`/teams/${teamId}/sports/${sportId}`),
   savePlayer: (input: PlayerInput) =>
     input.id
-      ? sportClient.patch<MutationBody>(`/jugadores/${input.id}`, playerBody(input))
-      : sportClient.post<MutationBody>("/jugadores", playerBody(input)),
-  deletePlayer: (id: string) => sportClient.delete<MutationBody>(`/jugadores/${id}`),
+      ? sportClient.patch<MutationBody>(`/players/${input.id}`, playerBody(input))
+      : sportClient.post<MutationBody>("/players", playerBody(input)),
+  deletePlayer: (id: string) => sportClient.delete<MutationBody>(`/players/${id}`),
   assignContract: (input: AssignContractInput) =>
-    sportClient.post<MutationBody>(`/equipos/${input.teamId}/jugadores`, {
-      jugadorId: Number(input.playerId),
+    sportClient.post<MutationBody>(`/teams/${input.teamId}/players`, {
+      playerId: Number(input.playerId),
       startDate: input.startDate,
       endDate: input.endDate,
     }),
   updateContract: (contractId: string, startDate: string, endDate: string) =>
-    sportClient.patch<MutationBody>(`/vinculaciones/${contractId}`, { startDate, endDate }),
+    sportClient.patch<MutationBody>(`/contracts/${contractId}`, { startDate, endDate }),
   releasePlayer: (contractId: string, reason: string, detail: string) =>
-    sportClient.post<MutationBody>(`/vinculaciones/${contractId}/retirar`, { reason, detail }),
+    sportClient.post<MutationBody>(`/contracts/${contractId}/release`, { reason, detail }),
   saveSkill: (input: SkillInput) =>
     input.id
-      ? sportClient.patch<MutationBody>(`/habilidades/${input.id}`, skillBody(input))
-      : sportClient.post<MutationBody>("/habilidades", skillBody(input)),
-  deleteSkill: (id: string) => sportClient.delete<MutationBody>(`/habilidades/${id}`),
+      ? sportClient.patch<MutationBody>(`/skills/${input.id}`, skillBody(input))
+      : sportClient.post<MutationBody>("/skills", skillBody(input)),
+  deleteSkill: (id: string) => sportClient.delete<MutationBody>(`/skills/${id}`),
   assignSkill: (playerId: string, skillId: string) =>
-    sportClient.post<MutationBody>(`/jugadores/${playerId}/habilidades`, { habilidadId: Number(skillId) }),
+    sportClient.post<MutationBody>(`/players/${playerId}/skills`, { skillId: Number(skillId) }),
   removePlayerSkill: (playerId: string, skillId: string) =>
-    sportClient.delete<MutationBody>(`/jugadores/${playerId}/habilidades/${skillId}`),
+    sportClient.delete<MutationBody>(`/players/${playerId}/skills/${skillId}`),
 };

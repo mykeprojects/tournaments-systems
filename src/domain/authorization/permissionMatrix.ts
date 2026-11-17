@@ -54,10 +54,16 @@ const RESOURCE_LABELS: Record<string, string> = {
   role_permissions: "Permisos de rol",
   rolepermissions: "Permisos de rol",
   tournaments: "Torneos",
+  sports: "Deportes",
+  deportes: "Deportes",
   teams: "Equipos",
   equipos: "Equipos",
+  contracts: "Contratos",
+  vinculaciones: "Contratos",
   players: "Jugadores",
   jugadores: "Jugadores",
+  skills: "Habilidades",
+  habilidades: "Habilidades",
   matches: "Partidos",
   partidos: "Partidos",
   tickets: "Entradas",
@@ -76,8 +82,11 @@ const RESOURCE_ORDER = [
   "user-roles",
   "role-permissions",
   "tournaments",
+  "sports",
   "teams",
+  "contracts",
   "players",
+  "skills",
   "matches",
   "tickets",
   "venues",
@@ -141,7 +150,7 @@ export const permissionModule = (permission: Permission): PermissionModule => {
   ) {
     return "Administración";
   }
-  if (["tournaments", "teams", "equipos", "players", "jugadores", "matches", "partidos"].includes(key)) {
+  if (["tournaments", "sports", "deportes", "teams", "equipos", "contracts", "vinculaciones", "players", "jugadores", "skills", "habilidades", "matches", "partidos"].includes(key)) {
     return "Gestión deportiva";
   }
   if (["tickets", "entradas"].includes(key)) {

@@ -44,10 +44,10 @@ export default function PlantillaPage() {
   }, []);
 
   const currentContracts = catalog.contracts.filter(
-    (contract) => contract.teamId === team?.id && contract.status === "activo"
+    (contract) => contract.teamId === team?.id && contract.status === "active"
   );
   const history = catalog.contracts
-    .filter((contract) => contract.teamId === team?.id && contract.status === "finalizado")
+    .filter((contract) => contract.teamId === team?.id && contract.status === "finished")
     .slice()
     .sort((left, right) => right.endDate.localeCompare(left.endDate));
   const currentPage = usePaged(currentContracts, 5);
@@ -336,7 +336,7 @@ function ContractTable({
                 </td>
                 <td className="px-3 py-3">{formatDate(contract.startDate)}</td>
                 <td className="px-3 py-3">{formatDate(contract.endDate)}</td>
-                <td className="px-3 py-3"><StatusPill status="activo" /></td>
+                <td className="px-3 py-3"><StatusPill status="active" /></td>
                 <td className="px-3 py-3">
                   <span className="flex gap-2">
                     <IconButton label="Ver perfil" tone="view" onClick={() => onView(contract)} />

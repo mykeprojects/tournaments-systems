@@ -16,8 +16,8 @@ describe("catálogo deportivo local", () => {
       name: "Fútbol",
       category: "Balón",
       description: "",
-      status: "activo",
-      subdeportes: [],
+      status: "active",
+      subsports: [],
     });
 
     expect(result.result.ok).toBe(false);
@@ -28,8 +28,8 @@ describe("catálogo deportivo local", () => {
       name: "Atletismo",
       category: "Atlética",
       description: "Pista y campo",
-      status: "activo",
-      subdeportes: ["Marcha"],
+      status: "active",
+      subsports: ["Marcha"],
     });
 
     expect(result.result.ok).toBe(true);

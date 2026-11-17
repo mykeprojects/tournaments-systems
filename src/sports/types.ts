@@ -1,4 +1,4 @@
-export type Status = "activo" | "inactivo";
+export type Status = "active" | "inactive";
 
 export type Sport = {
   id: string;
@@ -57,12 +57,12 @@ export type Contract = {
   teamId: string;
   startDate: string;
   endDate: string;
-  status: "activo" | "finalizado";
+  status: "active" | "finished";
   endReason: string | null;
   detail: string | null;
 };
 
-export type SkillCategory = "Física" | "Técnica" | "Táctica" | "Mental";
+export type SkillCategory = "Physical" | "Technical" | "Tactical" | "Mental";
 
 export type SkillGlyph =
   | "run"

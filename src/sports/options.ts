@@ -1,3 +1,5 @@
+import type { SkillCategory } from "./types";
+
 export const SPORT_CATEGORIES = [
   "Balón",
   "Red",
@@ -29,7 +31,17 @@ export const NATIONALITIES = [
 
 export const DOMINANT_FEET = ["Derecho", "Izquierdo", "Ambos"] as const;
 
-export const SKILL_CATEGORIES = ["Física", "Técnica", "Táctica", "Mental"] as const;
+export const SKILL_CATEGORIES = ["Physical", "Technical", "Tactical", "Mental"] as const satisfies readonly SkillCategory[];
+
+export const SKILL_CATEGORY_LABEL: Record<SkillCategory, string> = {
+  Physical: "Física",
+  Technical: "Técnica",
+  Tactical: "Táctica",
+  Mental: "Mental",
+};
+
+export const skillCategoryLabel = (category: string): string =>
+  SKILL_CATEGORY_LABEL[category as SkillCategory] ?? category;
 
 export const POSITION_CLASS: Record<string, string> = {
   DEL: "bg-red-500/15 text-red-300",
@@ -39,9 +51,9 @@ export const POSITION_CLASS: Record<string, string> = {
 };
 
 export const CATEGORY_TONE: Record<string, string> = {
-  Física: "bg-emerald-400/15 text-emerald-300",
-  Técnica: "bg-fuchsia-400/15 text-fuchsia-300",
-  Táctica: "bg-amber-300/15 text-amber-200",
+  Physical: "bg-emerald-400/15 text-emerald-300",
+  Technical: "bg-fuchsia-400/15 text-fuchsia-300",
+  Tactical: "bg-amber-300/15 text-amber-200",
   Mental: "bg-yellow-300/15 text-yellow-200",
 };
 

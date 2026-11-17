@@ -4,7 +4,7 @@ import { routePaths } from "../../routes/routePaths";
 import { useSportsCatalog } from "../SportsCatalogContext";
 import { fieldClass, ghostButtonClass, primaryButtonClass } from "../format";
 import { SkillMark, StarIcon } from "../glyphs";
-import { CATEGORY_TONE, SKILL_CATEGORIES } from "../options";
+import { CATEGORY_TONE, SKILL_CATEGORIES, skillCategoryLabel } from "../options";
 import { activeContract } from "../selectors";
 import type { Skill, SkillCategory } from "../types";
 import {
@@ -135,7 +135,7 @@ export default function HabilidadesPage() {
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar habilidad" aria-label="Buscar habilidad" className={fieldClass()} />
         <select value={category} onChange={(event) => setCategory(event.target.value as "todas" | SkillCategory)} aria-label="Filtrar por categoría" className={fieldClass()}>
           <option value="todas">Categoría: todas</option>
-          {SKILL_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
+          {SKILL_CATEGORIES.map((item) => <option key={item} value={item}>{skillCategoryLabel(item)}</option>)}
         </select>
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -156,7 +156,7 @@ export default function HabilidadesPage() {
                       <SkillMark glyph={skill.glyph} />
                     </span>
                     <p className="mt-3 text-center font-bold">{skill.name}</p>
-                    <p className={`mx-auto mt-1 w-fit rounded-full px-2 py-0.5 text-[11px] ${CATEGORY_TONE[skill.category]}`}>{skill.category}</p>
+                    <p className={`mx-auto mt-1 w-fit rounded-full px-2 py-0.5 text-[11px] ${CATEGORY_TONE[skill.category]}`}>{skillCategoryLabel(skill.category)}</p>
                     <p className="mt-2 text-center text-xs text-slate-400">{count} jugadores asociados</p>
                     <span className="mt-3 flex justify-center gap-2">
                       <IconButton label={`Ver ${skill.name}`} tone="view" onClick={() => setSelectedId(skill.id)} />
@@ -179,7 +179,7 @@ export default function HabilidadesPage() {
                 </span>
                 <div>
                   <h3 className="text-xl font-black">{selected.name}</h3>
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${CATEGORY_TONE[selected.category]}`}>{selected.category}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${CATEGORY_TONE[selected.category]}`}>{skillCategoryLabel(selected.category)}</span>
                 </div>
               </div>
               <p className="text-sm leading-6 text-slate-300">{selected.description}</p>
@@ -207,7 +207,7 @@ export default function HabilidadesPage() {
             <Field label="Categoría" required error={errors.category}>
               <select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as SkillCategory | "" })} className={fieldClass(Boolean(errors.category))}>
                 <option value="">Selecciona una categoría</option>
-                {SKILL_CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}
+                {SKILL_CATEGORIES.map((item) => <option key={item} value={item}>{skillCategoryLabel(item)}</option>)}
               </select>
             </Field>
             <Field label="Descripción" required error={errors.description}>

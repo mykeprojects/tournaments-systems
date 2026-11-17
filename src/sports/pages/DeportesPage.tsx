@@ -3,7 +3,7 @@ import { useSportsCatalog } from "../SportsCatalogContext";
 import { fieldClass, formatDate, ghostButtonClass, primaryButtonClass } from "../format";
 import { BallIcon, SportMark } from "../glyphs";
 import { SPORT_CATEGORIES } from "../options";
-import { familyIds, parentSports, subdeportesOf } from "../selectors";
+import { familyIds, parentSports, subsportsOf } from "../selectors";
 import type { Sport, Status } from "../types";
 import {
   EmptyNote,
@@ -25,15 +25,15 @@ type SportForm = {
   category: string;
   description: string;
   status: Status;
-  subdeportes: string[];
+  subsports: string[];
 };
 
 const emptyForm = (): SportForm => ({
   name: "",
   category: "",
   description: "",
-  status: "activo",
-  subdeportes: [],
+  status: "active",
+  subsports: [],
 });
 
 export default function DeportesPage() {
@@ -59,7 +59,7 @@ export default function DeportesPage() {
   const paging = usePaged(filtered, 5, `${query}|${status}`);
 
   const selected = parents.find((sport) => sport.id === selectedId) ?? filtered[0] ?? null;
-  const subs = selected ? subdeportesOf(catalog.sports, selected.id) : [];
+  const subs = selected ? subsportsOf(catalog.sports, selected.id) : [];
   const teamCount = selected
     ? new Set(
         catalog.teamSports
@@ -83,7 +83,7 @@ export default function DeportesPage() {
       category: sport.category,
       description: sport.description,
       status: sport.status,
-      subdeportes: subdeportesOf(catalog.sports, sport.id).map((item) => item.name),
+      subsports: subsportsOf(catalog.sports, sport.id).map((item) => item.name),
     });
     setDraftSub("");
     setErrors({});
@@ -95,11 +95,11 @@ export default function DeportesPage() {
     if (!name) {
       return;
     }
-    if (form.subdeportes.some((item) => item.toLocaleLowerCase("es") === name.toLocaleLowerCase("es"))) {
+    if (form.subsports.some((item) => item.toLocaleLowerCase("es") === name.toLocaleLowerCase("es"))) {
       setErrors((current) => ({ ...current, sub: "Ese subdeporte ya está en la lista." }));
       return;
     }
-    setForm((current) => ({ ...current, subdeportes: [...current.subdeportes, name] }));
+    setForm((current) => ({ ...current, subsports: [...current.subsports, name] }));
     setDraftSub("");
     setErrors((current) => ({ ...current, sub: "" }));
   };
@@ -175,8 +175,8 @@ export default function DeportesPage() {
           className={fieldClass()}
         >
           <option value="todos">Estado</option>
-          <option value="activo">Activo</option>
-          <option value="inactivo">Inactivo</option>
+          <option value="active">Activo</option>
+          <option value="inactive">Inactivo</option>
         </select>
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -194,7 +194,7 @@ export default function DeportesPage() {
               </thead>
               <tbody>
                 {paging.current.map((sport) => {
-                  const count = subdeportesOf(catalog.sports, sport.id).length;
+                  const count = subsportsOf(catalog.sports, sport.id).length;
                   return (
                     <tr
                       key={sport.id}
@@ -296,8 +296,8 @@ export default function DeportesPage() {
               </Field>
               <Field label="Estado">
                 <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })} className={fieldClass()}>
-                  <option value="activo">Activo</option>
-                  <option value="inactivo">Inactivo</option>
+                  <option value="active">Activo</option>
+                  <option value="inactive">Inactivo</option>
                 </select>
               </Field>
             </div>
@@ -319,15 +319,15 @@ export default function DeportesPage() {
               </span>
             </Field>
             <div>
-              <p className="text-xs font-semibold text-slate-300">Subdeportes agregados ({form.subdeportes.length})</p>
-              {form.subdeportes.length === 0 ? (
+              <p className="text-xs font-semibold text-slate-300">Subdeportes agregados ({form.subsports.length})</p>
+              {form.subsports.length === 0 ? (
                 <p className="mt-2 text-sm text-slate-500">Aún no has agregado subdeportes</p>
               ) : (
                 <ul className="mt-2 flex flex-wrap gap-2">
-                  {form.subdeportes.map((sub) => (
+                  {form.subsports.map((sub) => (
                     <li key={sub} className="inline-flex items-center gap-2 rounded-full border border-[#245078] px-3 py-1 text-xs">
                       {sub}
-                      <button type="button" aria-label={`Quitar ${sub}`} onClick={() => setForm({ ...form, subdeportes: form.subdeportes.filter((item) => item !== sub) })}>×</button>
+                      <button type="button" aria-label={`Quitar ${sub}`} onClick={() => setForm({ ...form, subsports: form.subsports.filter((item) => item !== sub) })}>×</button>
                     </li>
                   ))}
                 </ul>

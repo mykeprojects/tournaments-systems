@@ -21,7 +21,7 @@ export type SportInput = {
   category: string;
   description: string;
   status: Status;
-  subdeportes: string[];
+  subsports: string[];
 };
 
 export type TeamInput = {
@@ -95,7 +95,7 @@ export function saveSport(data: CatalogData, input: SportInput): Mutation {
   const name = normalize(input.name);
   const category = normalize(input.category);
   const description = input.description.trim();
-  const subdeportes = input.subdeportes.map(normalize).filter(Boolean);
+  const subsports = input.subsports.map(normalize).filter(Boolean);
 
   if (!name || !category) {
     return fail(data, "Completa los campos obligatorios.");
@@ -113,7 +113,7 @@ export function saveSport(data: CatalogData, input: SportInput): Mutation {
   }
 
   const uniqueSubs: string[] = [];
-  for (const sub of subdeportes) {
+  for (const sub of subsports) {
     if (sameName(sub, name) || uniqueSubs.some((item) => sameName(item, sub))) {
       return fail(data, `El subdeporte "${sub}" está repetido.`);
     }
@@ -349,7 +349,7 @@ function closeContract(contract: Contract, reason: string, detail: string): Cont
   const endDate = contract.startDate > today ? contract.startDate : today;
   return {
     ...contract,
-    status: "finalizado",
+    status: "finished",
     endReason: reason,
     detail,
     endDate,
@@ -363,7 +363,7 @@ function openContract(playerId: string, teamId: string, startDate: string, endDa
     teamId,
     startDate,
     endDate,
-    status: "activo",
+    status: "active",
     endReason: null,
     detail: null,
   };
@@ -429,7 +429,7 @@ export function savePlayer(data: CatalogData, input: PlayerInput): Mutation {
 
   let contracts = data.contracts;
   const active = contracts.find(
-    (contract) => contract.playerId === player.id && contract.status === "activo"
+    (contract) => contract.playerId === player.id && contract.status === "active"
   );
   if (!input.teamId && active) {
     contracts = contracts.map((contract) =>
@@ -500,7 +500,7 @@ export function assignContract(data: CatalogData, input: AssignContractInput): M
     return fail(data, "La fecha de fin debe ser igual o posterior a la de inicio.");
   }
   const active = data.contracts.find(
-    (contract) => contract.playerId === player.id && contract.status === "activo"
+    (contract) => contract.playerId === player.id && contract.status === "active"
   );
   if (active?.teamId === team.id) {
     return fail(data, "Este jugador ya se encuentra asociado al equipo.");
@@ -537,7 +537,7 @@ export function updateContract(
   if (!startDate || !endDate || endDate < startDate) {
     return fail(data, "Revisa las fechas del contrato.");
   }
-  const finished = current.status === "activo" && endDate < todayIso();
+  const finished = current.status === "active" && endDate < todayIso();
   return ok(
     {
       ...data,
@@ -547,7 +547,7 @@ export function updateContract(
               ...contract,
               startDate,
               endDate,
-              status: finished ? "finalizado" : contract.status,
+              status: finished ? "finished" : contract.status,
               endReason: finished ? "Finalizó contrato" : contract.endReason,
               detail: finished ? "Fin del contrato acordado" : contract.detail,
             }
@@ -565,7 +565,7 @@ export function releasePlayer(
   detail: string
 ): Mutation {
   const current = data.contracts.find((contract) => contract.id === contractId);
-  if (!current || current.status !== "activo") {
+  if (!current || current.status !== "active") {
     return fail(data, "El jugador no tiene una vinculación activa para retirar.");
   }
   return ok(

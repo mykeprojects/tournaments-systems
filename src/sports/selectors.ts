@@ -4,17 +4,17 @@ export function parentSports(sports: Sport[]): Sport[] {
   return sports.filter((sport) => sport.parentId === null);
 }
 
-export function subdeportesOf(sports: Sport[], parentId: string): Sport[] {
+export function subsportsOf(sports: Sport[], parentId: string): Sport[] {
   return sports.filter((sport) => sport.parentId === parentId);
 }
 
 export function familyIds(sports: Sport[], parentId: string): string[] {
-  return [parentId, ...subdeportesOf(sports, parentId).map((sport) => sport.id)];
+  return [parentId, ...subsportsOf(sports, parentId).map((sport) => sport.id)];
 }
 
 export function activeContract(contracts: Contract[], playerId: string): Contract | null {
   return (
-    contracts.find((contract) => contract.playerId === playerId && contract.status === "activo") ??
+    contracts.find((contract) => contract.playerId === playerId && contract.status === "active") ??
     null
   );
 }

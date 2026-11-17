@@ -4,7 +4,7 @@ import { RadarChart, ScoreBars } from "../RadarChart";
 import { useSportsCatalog } from "../SportsCatalogContext";
 import { NameLookup } from "../NameLookup";
 import { SkillMark, StarIcon } from "../glyphs";
-import { CATEGORY_TONE, POSITION_CLASS, RADAR_AXES } from "../options";
+import { CATEGORY_TONE, POSITION_CLASS, RADAR_AXES, skillCategoryLabel } from "../options";
 import { activeContract, skillScore } from "../selectors";
 import { Avatar, Crest, EmptyNote, NoticeBanner, PageHeader, Panel, type Notice } from "../ui";
 
@@ -110,7 +110,7 @@ export default function AsignarHabilidadesPage() {
                       <SkillMark glyph={skill.glyph} />
                     </span>
                     <p className="mt-2 font-bold">{skill.name}</p>
-                    <p className={`mt-1 w-fit rounded-full px-2 py-0.5 text-[11px] ${CATEGORY_TONE[skill.category]}`}>{skill.category}</p>
+                    <p className={`mt-1 w-fit rounded-full px-2 py-0.5 text-[11px] ${CATEGORY_TONE[skill.category]}`}>{skillCategoryLabel(skill.category)}</p>
                     <p className="mt-2 text-xs leading-5 text-slate-400">{skill.description}</p>
                     <button type="button" onClick={() => assign(skill.id)} className="mt-3 w-full rounded-lg bg-[#3dff7a] px-3 py-2 text-sm font-extrabold text-[#04210f]">
                       + Asignar

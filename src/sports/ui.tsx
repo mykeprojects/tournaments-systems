@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { EyeIcon, PencilIcon, TrashIcon } from "./glyphs";
 import { initials } from "./format";
+import type { Status } from "./types";
 
 export type NoticeTone = "ok" | "error" | "warn";
 
@@ -140,8 +141,8 @@ export function Field({
   );
 }
 
-export function StatusPill({ status }: { status: "activo" | "inactivo" }) {
-  const active = status === "activo";
+export function StatusPill({ status }: { status: Status }) {
+  const active = status === "active";
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${active ? "bg-emerald-400/15 text-emerald-300" : "bg-slate-500/20 text-slate-300"}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-300" : "bg-slate-400"}`} />

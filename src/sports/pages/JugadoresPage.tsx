@@ -48,7 +48,7 @@ const emptyForm = (): PlayerForm => ({
   position: "",
   heightM: "",
   dominantFoot: "",
-  status: "activo",
+  status: "active",
   email: "",
   phone: "",
   preferredSportId: "",
@@ -183,7 +183,7 @@ export default function JugadoresPage() {
       position: player.position,
       heightM: player.heightM,
       dominantFoot: player.dominantFoot,
-      status: player.status === "activo" ? "inactivo" : "activo",
+      status: player.status === "active" ? "inactive" : "active",
       email: player.email,
       phone: player.phone,
       preferredSportId: player.preferredSportId,
@@ -218,8 +218,8 @@ export default function JugadoresPage() {
         />
         <select value={status} onChange={(event) => setStatus(event.target.value as "todos" | Status)} aria-label="Filtrar por estado" className={fieldClass()}>
           <option value="todos">Estado: todos</option>
-          <option value="activo">Activo</option>
-          <option value="inactivo">Inactivo</option>
+          <option value="active">Activo</option>
+          <option value="inactive">Inactivo</option>
         </select>
         <select value={teamFilter} onChange={(event) => setTeamFilter(event.target.value)} aria-label="Filtrar por equipo" className={fieldClass()}>
           <option value="todos">Equipo: todos</option>
@@ -308,7 +308,7 @@ export default function JugadoresPage() {
                 <Link to={`${routePaths.sportsProfile}?jugador=${selected.id}`} className={ghostButtonClass}>Consultar</Link>
                 <button type="button" onClick={() => openEdit(selected)} className={ghostButtonClass}>Editar</button>
                 <button type="button" onClick={() => toggleStatus(selected)} className={ghostButtonClass}>
-                  {selected.status === "activo" ? "Desactivar" : "Activar"}
+                  {selected.status === "active" ? "Desactivar" : "Activar"}
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-2 text-center">
@@ -365,8 +365,8 @@ export default function JugadoresPage() {
             </Field>
             <Field label="Estado">
               <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })} className={fieldClass()}>
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
               </select>
             </Field>
             <Field label="Equipo actual">

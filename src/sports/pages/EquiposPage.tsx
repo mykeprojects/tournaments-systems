@@ -37,7 +37,7 @@ const emptyForm = (): TeamForm => ({
   shortName: "",
   city: "",
   description: "",
-  status: "activo",
+  status: "active",
 });
 
 export default function EquiposPage() {
@@ -76,7 +76,7 @@ export default function EquiposPage() {
   const selected = catalog.teams.find((team) => team.id === selectedId) ?? filtered[0] ?? null;
   const selectedSports = selected ? sportsOfTeam(catalog.teamSports, catalog.sports, selected.id) : [];
   const playerCount = selected
-    ? catalog.contracts.filter((contract) => contract.teamId === selected.id && contract.status === "activo").length
+    ? catalog.contracts.filter((contract) => contract.teamId === selected.id && contract.status === "active").length
     : 0;
 
   const openCreate = () => {
@@ -189,8 +189,8 @@ export default function EquiposPage() {
         </select>
         <select value={status} onChange={(event) => setStatus(event.target.value as "todos" | Status)} aria-label="Filtrar por estado" className={fieldClass()}>
           <option value="todos">Todos los estados</option>
-          <option value="activo">Activo</option>
-          <option value="inactivo">Inactivo</option>
+          <option value="active">Activo</option>
+          <option value="inactive">Inactivo</option>
         </select>
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -210,7 +210,7 @@ export default function EquiposPage() {
               <tbody>
                 {paging.current.map((team) => {
                   const sports = sportsOfTeam(catalog.teamSports, catalog.sports, team.id);
-                  const players = catalog.contracts.filter((contract) => contract.teamId === team.id && contract.status === "activo").length;
+                  const players = catalog.contracts.filter((contract) => contract.teamId === team.id && contract.status === "active").length;
                   return (
                     <tr key={team.id} onClick={() => setSelectedId(team.id)} className={`cursor-pointer border-t border-white/5 ${selected?.id === team.id ? "bg-white/5" : "hover:bg-white/[0.03]"}`}>
                       <td className="px-4 py-3">
@@ -321,8 +321,8 @@ export default function EquiposPage() {
             </Field>
             <Field label="Estado">
               <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as Status })} className={fieldClass()}>
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
               </select>
             </Field>
             <div className="sm:col-span-2">

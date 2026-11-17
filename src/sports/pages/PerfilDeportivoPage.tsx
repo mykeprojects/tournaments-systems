@@ -40,7 +40,7 @@ export default function PerfilDeportivoPage() {
         .slice()
         .sort((left, right) => right.startDate.localeCompare(left.startDate))
     : [];
-  const visibleContracts = showHistory ? contracts : contracts.filter((contract) => contract.status === "activo");
+  const visibleContracts = showHistory ? contracts : contracts.filter((contract) => contract.status === "active");
   const media = skills.length
     ? Math.round(skills.reduce((total, item) => total + item.link.score, 0) / skills.length)
     : null;
@@ -127,11 +127,11 @@ export default function PerfilDeportivoPage() {
                             <span>
                               <span className="block text-sm font-bold">{team?.name ?? "Equipo"}</span>
                               <span className="block text-xs text-slate-400">
-                                {contract.startDate.slice(0, 4)} - {contract.status === "activo" ? "actuales" : contract.endDate.slice(0, 4)}
+                                {contract.startDate.slice(0, 4)} - {contract.status === "active" ? "actuales" : contract.endDate.slice(0, 4)}
                               </span>
                             </span>
                           </span>
-                          {contract.status === "activo" && <span className="text-xs font-bold text-[#3dff7a]">Actual</span>}
+                          {contract.status === "active" && <span className="text-xs font-bold text-[#3dff7a]">Actual</span>}
                         </li>
                       );
                     })}
