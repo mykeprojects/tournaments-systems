@@ -155,7 +155,7 @@ export function SportMark({ name, className = "h-5 w-5" }: { name: string; class
       </Svg>
     );
   }
-  if (key.includes("voleibol") || key.includes("natación") || key.includes("natacion")) {
+  if (key.includes("voleibol")) {
     return (
       <Svg className={className}>
         <circle cx="12" cy="12" r="8" />

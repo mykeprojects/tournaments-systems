@@ -1,13 +1,6 @@
 import type { SkillCategory } from "./types";
 
-export const SPORT_CATEGORIES = [
-  "Balón",
-  "Red",
-  "Raqueta",
-  "Acuática",
-  "Combate",
-  "Atlética",
-] as const;
+export const SPORT_CATEGORIES = ["Balón", "Red", "Raqueta"] as const;
 
 export const CITIES = [
   "Manizales",
