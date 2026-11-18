@@ -1,4 +1,4 @@
-import type { Permission } from "../../services/roleService";
+import type { Permission } from "../../models/authorization";
 
 export const MATRIX_ACTIONS = [
   "Ver",

@@ -1,6 +1,6 @@
 import { permissionAction } from "../../domain/authorization/permissionMatrix";
-import { groupPermissionsByModule } from "../../services/roleService";
-import type { RoleAuthorization } from "../../services/userService";
+import { groupPermissionsByModule } from "../../domain/authorization/rolePermissions";
+import type { RoleAuthorization } from "../../models/user";
 
 type UserAuthorizationPanelProps = {
   roles: RoleAuthorization[] | undefined;

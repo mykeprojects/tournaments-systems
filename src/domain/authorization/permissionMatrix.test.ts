@@ -7,7 +7,7 @@ import {
   summarizeRoleMatrix,
   toggleMatrixCell,
 } from "./permissionMatrix";
-import type { Permission } from "../../services/roleService";
+import type { Permission } from "../../models/authorization";
 
 const permissions: Permission[] = [
   { id: 1, method: "GET", url: "/api/users", model: "users" },

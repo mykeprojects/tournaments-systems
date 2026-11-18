@@ -4,21 +4,20 @@ import {
   setTokenProvider,
 } from "../interceptors/apiClient";
 import {
-  getUserIdFromToken,
   login,
   loginWithExternalProvider,
   logout as logoutFromBackend,
   verifyTwoFactor,
-  type AuthSessionResponse,
 } from "../services/authService";
-import {
-  hasPermission as checkPermission,
-  listCurrentUserPermissions,
-  type PermissionKey,
-} from "../services/authorizationService";
-import type { Permission } from "../services/roleService";
+import { getUserIdFromToken } from "../domain/auth/token";
+import { hasPermission as checkPermission } from "../domain/authorization/permissionAccess";
+import { listCurrentUserPermissions } from "../services/authorizationService";
+import type { AuthSessionResponse } from "../models/auth";
+import type { Permission, PermissionKey } from "../models/authorization";
 import type { CredentialsLoginResult } from "./AuthContextDefinition";
 import type { AuthProviderType } from "../domain/auth";
+import { getUserRoleAssignments } from "../services/userService";
+import type { Role } from "../models/user";
 import {
   clearAuthSession,
   getAuthSession,
@@ -71,6 +70,9 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [expiresAt, setExpiresAt] = useState(storedSession.expiresAt);
   const [loading, setLoading] = useState(Boolean(storedSession.user));
   const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [roleLoading, setRoleLoading] = useState(Boolean(storedSession.user));
+  const [roleLoadError, setRoleLoadError] = useState<string | null>(null);
   const [permissionCheckError, setPermissionCheckError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,6 +82,9 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setExpiresAt(null);
       setPermissions([]);
+      setRoles([]);
+      setRoleLoading(false);
+      setRoleLoadError(null);
       setPermissionCheckError(null);
     });
 
@@ -100,6 +105,20 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
           );
         })
         .finally(() => setLoading(false));
+      void getUserRoleAssignments(storedSession.user.id)
+        .then((assignments) => {
+          setRoles(assignments.map((assignment) => assignment.role));
+          setRoleLoadError(null);
+        })
+        .catch((error: unknown) => {
+          setRoles([]);
+          setRoleLoadError(
+            error instanceof Error
+              ? error.message
+              : "No fue posible consultar los roles de esta cuenta."
+          );
+        })
+        .finally(() => setRoleLoading(false));
     }
 
     return () => {
@@ -118,6 +137,9 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setExpiresAt(null);
       setPermissions([]);
+      setRoles([]);
+      setRoleLoading(false);
+      setRoleLoadError(null);
       setPermissionCheckError(null);
     }, Math.max(0, expiresAt - Date.now()));
 
@@ -139,20 +161,39 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser({ email, id: userId });
     setExpiresAt(expirationTime);
     setPermissions([]);
+    setRoles([]);
+    setRoleLoadError(null);
     setPermissionCheckError(null);
     setLoading(true);
+    setRoleLoading(true);
 
-    try {
-      setPermissions(await listCurrentUserPermissions(userId));
-    } catch (error) {
+    const [permissionResult, roleResult] = await Promise.allSettled([
+      listCurrentUserPermissions(userId),
+      getUserRoleAssignments(userId),
+    ]);
+    if (permissionResult.status === "fulfilled") {
+      setPermissions(permissionResult.value);
+      setPermissionCheckError(null);
+    } else {
       setPermissionCheckError(
-        error instanceof Error
-          ? error.message
+        permissionResult.reason instanceof Error
+          ? permissionResult.reason.message
           : "No fue posible consultar los permisos de esta cuenta."
       );
-    } finally {
-      setLoading(false);
     }
+    if (roleResult.status === "fulfilled") {
+      setRoles(roleResult.value.map((assignment) => assignment.role));
+      setRoleLoadError(null);
+    } else {
+      setRoles([]);
+      setRoleLoadError(
+        roleResult.reason instanceof Error
+          ? roleResult.reason.message
+          : "No fue posible consultar los roles de esta cuenta."
+      );
+    }
+    setLoading(false);
+    setRoleLoading(false);
   };
 
   const loginWithCredentials = async (
@@ -224,20 +265,36 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     setLoading(true);
+    setRoleLoading(true);
     setPermissionCheckError(null);
+    setRoleLoadError(null);
 
-    try {
-      setPermissions(await listCurrentUserPermissions(user.id));
-    } catch (error) {
+    const [permissionResult, roleResult] = await Promise.allSettled([
+      listCurrentUserPermissions(user.id),
+      getUserRoleAssignments(user.id),
+    ]);
+    if (permissionResult.status === "fulfilled") {
+      setPermissions(permissionResult.value);
+    } else {
       setPermissions([]);
       setPermissionCheckError(
-        error instanceof Error
-          ? error.message
+        permissionResult.reason instanceof Error
+          ? permissionResult.reason.message
           : "No fue posible consultar los permisos de esta cuenta."
       );
-    } finally {
-      setLoading(false);
     }
+    if (roleResult.status === "fulfilled") {
+      setRoles(roleResult.value.map((assignment) => assignment.role));
+    } else {
+      setRoles([]);
+      setRoleLoadError(
+        roleResult.reason instanceof Error
+          ? roleResult.reason.message
+          : "No fue posible consultar los roles de esta cuenta."
+      );
+    }
+    setLoading(false);
+    setRoleLoading(false);
   };
 
   const logout = async (): Promise<void> => {
@@ -248,6 +305,9 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(null);
       setExpiresAt(null);
       setPermissions([]);
+      setRoles([]);
+      setRoleLoading(false);
+      setRoleLoadError(null);
       setPermissionCheckError(null);
       setLoading(false);
     }
@@ -260,6 +320,9 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     user,
     loading,
     permissions,
+    roles,
+    roleLoading,
+    roleLoadError,
     permissionCheckError,
     hasPermission,
     loginWithCredentials,

@@ -49,6 +49,19 @@ El backend debe incluir el origen del frontend en
 La integración de Firebase/OAuth se mantiene fuera de este flujo de trabajo y
 se incorporará por separado.
 
+## Apuestas (HU-GC-11)
+
+- El frontend del servicio deportivo usa `VITE_SPORT_API_URL` (por defecto
+  `http://localhost:3000`) y envía el JWT de la sesión a `ms_sport_system`.
+- El rol `AFICIONADO`/`HINCHA` accede a `/apuestas`: partidos disponibles,
+  métodos de pago propios, registro, historial y solicitud de cancelación.
+- El rol `ADMINISTRADOR DEPORTIVO` accede a `/gestion/apuestas` para consultar
+  apuestas por partido. Las rutas de gestión deportiva existentes también
+  quedan limitadas a este rol.
+- Los roles controlan navegación y vistas en el frontend; las reglas sobre
+  propiedad del método de pago, disponibilidad, límites, cancelación y
+  liquidación siguen siendo responsabilidad del backend.
+
 ## Comandos
 
 ```powershell

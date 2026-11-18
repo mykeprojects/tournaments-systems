@@ -1,5 +1,9 @@
 import type { FormEvent, ReactNode } from "react";
-import { isAdministratorRole } from "../../services/roleService";
+import {
+  isAdministratorRole,
+  isAdministratorRoleAssignmentRemovalProtected,
+  ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE,
+} from "../../domain/authorization/roleAccess";
 import ProfileFieldsForm, {
   type ProfileFormValues,
 } from "../profile/ProfileFieldsForm";
@@ -9,11 +13,7 @@ import type {
   UserDetail,
   UserRoleAssignment,
   UserSummary,
-} from "../../services/userService";
-import {
-  isAdministratorRoleAssignmentRemovalProtected,
-  ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE,
-} from "../../services/userService";
+} from "../../models/user";
 
 type UserDirectoryProps = {
   users: UserSummary[];

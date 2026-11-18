@@ -1,88 +1,15 @@
 import axios from "axios";
 import apiClient from "../interceptors/apiClient";
-
-export interface UserSummary {
-  id: number;
-  name: string;
-  email: string;
-}
-
-export interface CreateUserRequest {
-  name: string;
-  email: string;
-  password: string;
-}
-
-export interface UserWithRoles extends UserSummary {
-  roles: UserRoleAssignment[];
-}
-
-export interface Role {
-  id: number;
-  name: string;
-  description: string;
-}
-
-export interface UserRoleAssignment {
-  id: number;
-  userId: number;
-  role: Role;
-}
-
-export const ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE =
-  "No puedes quitar el rol de administrador a otro usuario que también tiene ese rol.";
-
-const isAdministratorRoleAssignment = (role: Pick<Role, "name">): boolean =>
-  ["ADMIN", "ADMINISTRADOR"].includes(
-    role.name.trim().toLocaleUpperCase()
-  );
-
-export const isAdministratorRoleAssignmentRemovalProtected = (
-  assignments: UserRoleAssignment[],
-  currentUserId: number | undefined,
-  targetUserId: number,
-  targetRole: Pick<Role, "name">
-): boolean =>
-  currentUserId !== undefined &&
-  currentUserId !== targetUserId &&
-  isAdministratorRoleAssignment(targetRole) &&
-  assignments.some(
-    (assignment) =>
-      assignment.userId === currentUserId &&
-      isAdministratorRoleAssignment(assignment.role)
-  );
-
-export interface CreateUserRoleRequest {
-  userId: number;
-  roleId: number;
-}
-
-export interface Profile {
-  id: number;
-  userId: number;
-  phone: string;
-  photoUrl: string | null;
-  birthDate: string;
-}
-
-export interface PermissionAuthorization {
-  id: number;
-  url: string;
-  method: string;
-  model: string | null;
-}
-
-export interface RoleAuthorization {
-  id: number;
-  name: string;
-  description: string;
-  permissions: PermissionAuthorization[];
-}
-
-export interface UserDetail extends UserSummary {
-  profile: Profile | null;
-  roles?: RoleAuthorization[];
-}
+import type {
+  CreateUserRequest,
+  CreateUserRoleRequest,
+  Profile,
+  Role,
+  UserDetail,
+  UserRoleAssignment,
+  UserSummary,
+  UserWithRoles,
+} from "../models/user";
 
 export const listUsers = async (): Promise<UserSummary[]> => {
   const response = await apiClient.get<UserSummary[]>("/api/users");

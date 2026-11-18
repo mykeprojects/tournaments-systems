@@ -1,3 +1,7 @@
+export type { AuthSessionResponse } from "./auth/AuthSessionResponse";
+export type { CredentialLoginResponse } from "./auth/CredentialLoginResponse";
+export type { TwoFactorStatus } from "./auth/TwoFactorStatus";
+
 export type {
   AppProfile,
   AppUser,

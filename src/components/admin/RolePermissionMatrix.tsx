@@ -1,5 +1,8 @@
-import type { Permission, RolePermissionAssignment } from "../../services/roleService";
-import type { Role } from "../../services/userService";
+import type {
+  Permission,
+  RolePermissionAssignment,
+} from "../../models/authorization";
+import type { Role } from "../../models/user";
 import {
   MATRIX_ACTIONS,
   assignedPermissionIdsForRole,
@@ -7,7 +10,7 @@ import {
   isMatrixCellChecked,
   summarizeRoleMatrix,
 } from "../../domain/authorization/permissionMatrix";
-import { isAdministratorRole } from "../../services/roleService";
+import { isAdministratorRole } from "../../domain/authorization/roleAccess";
 import Icon from "../icons/Icon";
 import { iconForResource } from "./permissionMatrixIcons";
 

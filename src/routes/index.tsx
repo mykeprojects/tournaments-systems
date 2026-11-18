@@ -3,8 +3,11 @@ import SignIn from "../pages/Authentication/SignIn";
 import SignUp from "../pages/Authentication/SignUp";
 import ForgotPassword from "../pages/Authentication/ForgotPassword";
 import ResetPassword, { SetNewPassword } from "../pages/Authentication/ResetPassword";
-import Dashboard from "../pages/Protected/Dashboard";
+import RoleLanding from "../pages/Protected/RoleLanding";
 import RoleManagement from "../pages/Protected/RoleManagement";
+import FanBetsPage from "../pages/Protected/FanBetsPage";
+import SportsAdminBetsPage from "../pages/Protected/SportsAdminBetsPage";
+import Forbidden from "../pages/Protected/Forbidden";
 import AppShellLayout from "../sports/AppShellLayout";
 import SportsLayout from "../sports/SportsLayout";
 import AsociarDeportesPage from "../sports/pages/AsociarDeportesPage";
@@ -15,7 +18,7 @@ import HabilidadesPage from "../sports/pages/HabilidadesPage";
 import JugadoresPage from "../sports/pages/JugadoresPage";
 import PerfilDeportivoPage from "../sports/pages/PerfilDeportivoPage";
 import PlantillaPage from "../sports/pages/PlantillaPage";
-import { AuthGuard } from "./guards";
+import { AuthGuard, RoleGuard } from "./guards";
 import { routePaths } from "./routePaths";
 
 export { routePaths };
@@ -25,39 +28,56 @@ export const router = createBrowserRouter([
     element: <AuthGuard />,
     children: [
       {
+        path: routePaths.forbidden,
+        element: <Forbidden />,
+      },
+      {
         path: routePaths.home,
         element: <Navigate to={routePaths.dashboard} replace />,
       },
       {
         element: <AppShellLayout />,
         children: [
-      {
-        path: routePaths.dashboard,
-        element: <Dashboard />,
-      },
-      {
-        path: routePaths.admin,
-        element: <Dashboard />,
-      },
-      {
-        path: routePaths.roles,
-        element: <RoleManagement />,
-      },
-      {
-        path: "/gestion",
-        element: <SportsLayout />,
-        children: [
-          { index: true, element: <Navigate to={routePaths.sports} replace /> },
-          { path: "deportes", element: <DeportesPage /> },
-          { path: "equipos", element: <EquiposPage /> },
-          { path: "equipos/asociar", element: <AsociarDeportesPage /> },
-          { path: "equipos/plantilla", element: <PlantillaPage /> },
-          { path: "jugadores", element: <JugadoresPage /> },
-          { path: "habilidades", element: <HabilidadesPage /> },
-          { path: "habilidades/asignar", element: <AsignarHabilidadesPage /> },
-          { path: "perfil", element: <PerfilDeportivoPage /> },
-        ],
-      },
+          {
+            path: routePaths.dashboard,
+            element: <RoleLanding />,
+          },
+          {
+            path: routePaths.admin,
+            element: <RoleLanding />,
+          },
+          {
+            path: routePaths.roles,
+            element: <RoleManagement />,
+          },
+          {
+            element: <RoleGuard requiredRole="fan" />,
+            children: [{ path: routePaths.bets, element: <FanBetsPage /> }],
+          },
+          {
+            element: <RoleGuard requiredRole="sportsAdmin" />,
+            children: [{ path: routePaths.sportsBets, element: <SportsAdminBetsPage /> }],
+          },
+          {
+            element: <RoleGuard requiredRole="sportsAdmin" />,
+            children: [
+              {
+                path: "/gestion",
+                element: <SportsLayout />,
+                children: [
+                  { index: true, element: <Navigate to={routePaths.sports} replace /> },
+                  { path: "deportes", element: <DeportesPage /> },
+                  { path: "equipos", element: <EquiposPage /> },
+                  { path: "equipos/asociar", element: <AsociarDeportesPage /> },
+                  { path: "equipos/plantilla", element: <PlantillaPage /> },
+                  { path: "jugadores", element: <JugadoresPage /> },
+                  { path: "habilidades", element: <HabilidadesPage /> },
+                  { path: "habilidades/asignar", element: <AsignarHabilidadesPage /> },
+                  { path: "perfil", element: <PerfilDeportivoPage /> },
+                ],
+              },
+            ],
+          },
         ],
       },
     ],

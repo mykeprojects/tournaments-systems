@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  isAdministratorRole,
   hasDuplicateRolePermissionSet,
   getRolePermissionChanges,
   groupPermissionsByModule,
-  type Permission,
-  type RolePermissionAssignment,
-} from "./roleService";
+} from "./rolePermissions";
+import { isAdministratorRole } from "./roleAccess";
+import type {
+  Permission,
+  RolePermissionAssignment,
+} from "../../models/authorization";
 
 const permissions: Permission[] = [
   { id: 1, method: "GET", url: "/api/users", model: "users" },

@@ -10,7 +10,11 @@ import {
   PHONE_NUMBER_MESSAGE,
   sanitizePhoneNumber,
 } from "../../domain/profile/phoneNumber";
-import { isAdministratorRole } from "../../services/roleService";
+import {
+  isAdministratorRole,
+  isAdministratorRoleAssignmentRemovalProtected,
+  ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE,
+} from "../../domain/authorization/roleAccess";
 import { useAuth } from "../../hooks/useAuth";
 import {
   createProfile,
@@ -21,23 +25,23 @@ import {
   deleteUserRole,
   getUserDetail,
   getUserServiceErrorMessage,
-  isAdministratorRoleAssignmentRemovalProtected,
-  ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE,
   listRoles,
   listUserRoleAssignments,
   listUsers,
   updateProfile,
-  type Profile,
-  type Role,
-  type UserDetail,
-  type UserRoleAssignment,
-  type UserSummary,
 } from "../../services/userService";
 import {
   getTwoFactorStatus,
   updateTwoFactorPreference,
-  type TwoFactorStatus,
 } from "../../services/authService";
+import type { TwoFactorStatus } from "../../models/auth";
+import type {
+  Profile,
+  Role,
+  UserDetail,
+  UserRoleAssignment,
+  UserSummary,
+} from "../../models/user";
 
 const EMPTY_USER_FORM = { name: "", email: "", password: "" };
 const EMPTY_PROFILE_FORM = { phone: "", photoUrl: "", birthDate: "" };
