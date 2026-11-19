@@ -1,4 +1,5 @@
 import apiClient from "../interceptors/apiClient";
+<<<<<<< HEAD
 import type { Permission } from "./roleService";
 
 export type PermissionKey =
@@ -76,6 +77,9 @@ export const hasPermission = (
     grantedRoutes.has(`${method} ${url}`)
   );
 };
+=======
+import type { Permission } from "../models/authorization";
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
 
 export const listCurrentUserPermissions = async (
   userId: number

@@ -1,0 +1,10 @@
+export type { Bet } from "./Bet";
+export type { BetMatchDetails } from "./BetMatchDetails";
+export type { BetSelection } from "./BetSelection";
+export type { BetStatus } from "./BetStatus";
+export type { CreateBetInput } from "./CreateBetInput";
+export type { FanPaymentMethod } from "./FanPaymentMethod";
+export type { Match } from "./Match";
+export type { MatchStatus } from "./MatchStatus";
+export type { OfficialResult } from "./OfficialResult";
+export type { PaymentMethodCatalog, PaymentMethodType } from "./PaymentMethodCatalog";

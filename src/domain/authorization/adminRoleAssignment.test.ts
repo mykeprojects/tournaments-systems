@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   isAdministratorRoleAssignmentRemovalProtected,
-  type UserRoleAssignment,
-} from "./userService";
+} from "./roleAccess";
+import type { UserRoleAssignment } from "../../models/user";
 
 const assignment = (
   id: number,

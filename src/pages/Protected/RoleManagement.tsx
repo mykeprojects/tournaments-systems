@@ -13,29 +13,32 @@ import {
   assignedPermissionIdsForRole,
   toggleMatrixCell,
 } from "../../domain/authorization/permissionMatrix";
+import {
+  DUPLICATE_ROLE_PERMISSION_MESSAGE,
+  groupPermissionsByModule,
+  hasDuplicateRolePermissionSet,
+} from "../../domain/authorization/rolePermissions";
+import { isAdministratorRole } from "../../domain/authorization/roleAccess";
 import { useAuth } from "../../hooks/useAuth";
 import { routePaths } from "../../routes/routePaths";
 import {
   createRole,
   deleteRole,
-  DUPLICATE_ROLE_PERMISSION_MESSAGE,
-  groupPermissionsByModule,
-  hasDuplicateRolePermissionSet,
-  isAdministratorRole,
   listPermissions,
   listRolePermissionAssignments,
   replaceRolePermissions,
   updateRole,
-  type Permission,
-  type RolePermissionAssignment,
 } from "../../services/roleService";
 import {
   getUserServiceErrorMessage,
   listRoles,
   listUserRoleAssignments,
-  type Role,
-  type UserRoleAssignment,
 } from "../../services/userService";
+import type {
+  Permission,
+  RolePermissionAssignment,
+} from "../../models/authorization";
+import type { Role, UserRoleAssignment } from "../../models/user";
 
 const INPUT_CLASS =
   "mt-2 w-full rounded-xl border border-[#245078] bg-[#071321] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20";

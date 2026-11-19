@@ -17,10 +17,18 @@ export const routePaths = {
   sportsSkills: "/gestion/habilidades",
   sportsSkillAssign: "/gestion/habilidades/asignar",
   sportsProfile: "/gestion/perfil",
+<<<<<<< HEAD
   tournaments: "/gestion/torneos",
   tournamentRegistrations: "/gestion/inscripciones",
   tournamentPhases: "/gestion/fases",
   tournamentGroups: "/gestion/grupos",
   tournamentBrackets: "/gestion/fases-finales",
   matches: "/gestion/partidos",
+=======
+  sportsMatches: "/gestion/partidos",
+  bets: "/apuestas",
+  paymentMethods: "/metodos-pago",
+  sportsBets: "/gestion/apuestas",
+  tracking: "/seguimiento",
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
 } as const;

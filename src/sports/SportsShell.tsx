@@ -2,9 +2,11 @@ import { useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { routePaths } from "../routes/routePaths";
+import { applicationRoleLabel, hasApplicationRole } from "../domain/authorization/roleAccess";
 import { displayPerson, initials } from "./format";
 import { BallIcon, ChartIcon, PlayerIcon, ShieldIcon, StarIcon, TeamsIcon, TrophyIcon, UsersIcon } from "./glyphs";
 
+<<<<<<< HEAD
 const NAV = [
   { to: routePaths.sports, label: "Deportes", icon: <BallIcon />, active: (path: string) => path.startsWith("/gestion/deportes") },
   { to: routePaths.sportsTeams, label: "Equipos", icon: <TeamsIcon />, active: (path: string) => path.startsWith("/gestion/equipos") },
@@ -40,6 +42,47 @@ export function SportsShell({ children }: { children: ReactNode }) {
   const displayRole = formatRoleName(roleName);
   const isFan = (roleName ?? "").trim().toUpperCase() === "AFICIONADO";
   const navItems = isFan ? FAN_NAV : NAV;
+=======
+export function SportsShell({ children }: { children: ReactNode }) {
+  const { user, roles, hasPermission, logout } = useAuth();
+  const { pathname } = useLocation();
+  const [noticesOpen, setNoticesOpen] = useState(false);
+  const name = displayPerson(user?.email);
+  const roleNames = roles.map((role) => role.name);
+  const isSportsAdmin = hasApplicationRole(roleNames, "sportsAdmin");
+  const isFan = hasApplicationRole(roleNames, "fan");
+  const roleLabel = applicationRoleLabel(roleNames);
+  const nav = [
+    ...(isFan
+      ? [
+          { to: routePaths.bets, label: "Mis apuestas", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.bets) },
+          { to: routePaths.paymentMethods, label: "Métodos de pago", icon: <ShieldIcon />, active: (path: string) => path.startsWith(routePaths.paymentMethods) },
+        ]
+      : []),
+    ...(isFan || isSportsAdmin
+      ? [
+          { to: routePaths.tracking, label: "Seguimiento en vivo", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.tracking) },
+        ]
+      : []),
+    ...(isSportsAdmin
+      ? [
+          { to: routePaths.sports, label: "Deportes", icon: <BallIcon />, active: (path: string) => path.startsWith("/gestion/deportes") },
+          { to: routePaths.sportsTeams, label: "Equipos", icon: <TeamsIcon />, active: (path: string) => path.startsWith("/gestion/equipos") },
+          { to: routePaths.sportsPlayers, label: "Jugadores", icon: <PlayerIcon />, active: (path: string) => path.startsWith("/gestion/jugadores") },
+          { to: routePaths.sportsSkills, label: "Habilidades", icon: <StarIcon />, active: (path: string) => path.startsWith("/gestion/habilidades") },
+          { to: routePaths.sportsProfile, label: "Perfil Deportivo", icon: <ChartIcon />, active: (path: string) => path.startsWith("/gestion/perfil") },
+          { to: routePaths.sportsMatches, label: "Partidos", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.sportsMatches) },
+          { to: routePaths.sportsBets, label: "Apuestas por partido", icon: <ChartIcon />, active: (path: string) => path.startsWith(routePaths.sportsBets) },
+        ]
+      : []),
+    ...(hasPermission("users.view")
+      ? [{ to: routePaths.dashboard, label: "Usuarios", icon: <UsersIcon />, active: (path: string) => path === "/dashboard" || path === "/admin" }]
+      : []),
+    ...(hasPermission("roles.view")
+      ? [{ to: routePaths.roles, label: "Roles", icon: <ShieldIcon />, active: (path: string) => path.startsWith("/admin/roles") }]
+      : []),
+  ];
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
 
   return (
     <div className="sports-canvas flex min-h-screen flex-col text-white lg:flex-row">
@@ -54,7 +97,11 @@ export function SportsShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav className="flex gap-2 overflow-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:pb-0">
+<<<<<<< HEAD
           {navItems.map((item) => {
+=======
+          {nav.map((item) => {
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
             const active = item.active(pathname);
             return (
               <NavLink
@@ -79,7 +126,11 @@ export function SportsShell({ children }: { children: ReactNode }) {
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold">{name}</p>
+<<<<<<< HEAD
                 <p className="text-xs text-emerald-300">En línea · {displayRole}</p>
+=======
+                <p className="text-xs text-emerald-300">En línea · {roleLabel}</p>
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
               </div>
             </div>
             <button type="button" onClick={() => void logout()} className="mt-3 w-full rounded-lg border border-white/10 px-2 py-1.5 text-[11px] font-semibold text-slate-300 hover:border-[#3dff7a]/40 hover:text-white">
@@ -115,7 +166,11 @@ export function SportsShell({ children }: { children: ReactNode }) {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-xs font-bold">{initials(name)}</span>
             <span className="hidden sm:block">
               <span className="block text-sm font-bold">{name}</span>
+<<<<<<< HEAD
               <span className="block text-xs text-slate-400">{displayRole}</span>
+=======
+              <span className="block text-xs text-slate-400">{roleLabel}</span>
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
             </span>
           </div>
         </header>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { hasPermission, type PermissionKey } from "./authorizationService";
-import type { Permission } from "./roleService";
+import { hasPermission } from "./permissionAccess";
+import type { Permission, PermissionKey } from "../../models/authorization";
 
 const grant = (method: string, url: string): Permission => ({
   id: 1,

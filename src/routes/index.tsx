@@ -3,8 +3,14 @@ import SignIn from "../pages/Authentication/SignIn";
 import SignUp from "../pages/Authentication/SignUp";
 import ForgotPassword from "../pages/Authentication/ForgotPassword";
 import ResetPassword, { SetNewPassword } from "../pages/Authentication/ResetPassword";
-import Dashboard from "../pages/Protected/Dashboard";
+import RoleLanding from "../pages/Protected/RoleLanding";
 import RoleManagement from "../pages/Protected/RoleManagement";
+import FanBetsPage from "../pages/Protected/FanBetsPage";
+import FanPaymentMethodsPage from "../pages/Protected/FanPaymentMethodsPage";
+import SportsAdminBetsPage from "../pages/Protected/SportsAdminBetsPage";
+import MatchManagementPage from "../pages/Protected/MatchManagementPage";
+import MatchTrackingPage from "../pages/Protected/MatchTrackingPage";
+import Forbidden from "../pages/Protected/Forbidden";
 import AppShellLayout from "../sports/AppShellLayout";
 import SportsLayout from "../sports/SportsLayout";
 import AsociarDeportesPage from "../sports/pages/AsociarDeportesPage";
@@ -15,6 +21,7 @@ import HabilidadesPage from "../sports/pages/HabilidadesPage";
 import JugadoresPage from "../sports/pages/JugadoresPage";
 import PerfilDeportivoPage from "../sports/pages/PerfilDeportivoPage";
 import PlantillaPage from "../sports/pages/PlantillaPage";
+<<<<<<< HEAD
 import TorneosPage from "../sports/pages/TorneosPage";
 import TorneoDesarrolloPage from "../sports/pages/TorneoDesarrolloPage";
 import InscripcionesPage from "../sports/pages/InscripcionesPage";
@@ -23,6 +30,9 @@ import GruposPage from "../sports/pages/GruposPage";
 import FasesFinalesPage from "../sports/pages/FasesFinalesPage";
 import PartidosPage from "../sports/pages/PartidosPage";
 import { AuthGuard } from "./guards";
+=======
+import { AuthGuard, RoleGuard } from "./guards";
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
 import { routePaths } from "./routePaths";
 
 export { routePaths };
@@ -32,12 +42,17 @@ export const router = createBrowserRouter([
     element: <AuthGuard />,
     children: [
       {
+        path: routePaths.forbidden,
+        element: <Forbidden />,
+      },
+      {
         path: routePaths.home,
         element: <Navigate to={routePaths.dashboard} replace />,
       },
       {
         element: <AppShellLayout />,
         children: [
+<<<<<<< HEAD
       {
         path: routePaths.dashboard,
         element: <Dashboard />,
@@ -72,6 +87,56 @@ export const router = createBrowserRouter([
           { path: "partidos", element: <PartidosPage /> },
         ],
       },
+=======
+          {
+            path: routePaths.dashboard,
+            element: <RoleLanding />,
+          },
+          {
+            path: routePaths.admin,
+            element: <RoleLanding />,
+          },
+          {
+            path: routePaths.roles,
+            element: <RoleManagement />,
+          },
+          {
+            element: <RoleGuard requiredRole="fan" />,
+            children: [
+              { path: routePaths.bets, element: <FanBetsPage /> },
+              { path: routePaths.paymentMethods, element: <FanPaymentMethodsPage /> },
+            ],
+          },
+          {
+            element: <RoleGuard requiredRole="sportsAdmin" />,
+            children: [{ path: routePaths.sportsBets, element: <SportsAdminBetsPage /> }],
+          },
+          {
+            element: <RoleGuard requiredRole={["sportsAdmin", "fan"]} />,
+            children: [{ path: routePaths.tracking, element: <MatchTrackingPage /> }],
+          },
+          {
+            element: <RoleGuard requiredRole="sportsAdmin" />,
+            children: [
+              {
+                path: "/gestion",
+                element: <SportsLayout />,
+                children: [
+                  { index: true, element: <Navigate to={routePaths.sports} replace /> },
+                  { path: "deportes", element: <DeportesPage /> },
+                  { path: "equipos", element: <EquiposPage /> },
+                  { path: "equipos/asociar", element: <AsociarDeportesPage /> },
+                  { path: "equipos/plantilla", element: <PlantillaPage /> },
+                  { path: "jugadores", element: <JugadoresPage /> },
+                  { path: "habilidades", element: <HabilidadesPage /> },
+                  { path: "habilidades/asignar", element: <AsignarHabilidadesPage /> },
+                  { path: "perfil", element: <PerfilDeportivoPage /> },
+                  { path: "partidos", element: <MatchManagementPage /> },
+                ],
+              },
+            ],
+          },
+>>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
         ],
       },
     ],

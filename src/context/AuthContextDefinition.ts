@@ -1,7 +1,7 @@
 import { createContext } from "react";
 import type { AuthProviderType } from "../domain/auth";
-import type { Permission } from "../services/roleService";
-import type { PermissionKey } from "../services/authorizationService";
+import type { Permission, PermissionKey } from "../models/authorization";
+import type { Role } from "../models/user";
 
 export interface AuthenticatedUser {
   email: string;
@@ -16,6 +16,9 @@ export interface AuthContextType {
   user: AuthenticatedUser | null;
   loading: boolean;
   permissions: Permission[];
+  roles: Role[];
+  roleLoading: boolean;
+  roleLoadError: string | null;
   permissionCheckError: string | null;
   roleName: string | null;
   hasPermission: (permission: PermissionKey) => boolean;

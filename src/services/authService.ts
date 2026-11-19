@@ -2,6 +2,11 @@ import axios from "axios";
 import apiClient from "../interceptors/apiClient";
 import type { RegisterUserRequest } from "../models/auth/RegisterUserRequest";
 import type { RegisteredUser } from "../models/auth/RegisteredUser";
+import type {
+  AuthSessionResponse,
+  CredentialLoginResponse,
+  TwoFactorStatus,
+} from "../models/auth";
 import type { AuthProviderType } from "../domain/auth";
 
 export const register = async (
@@ -17,26 +22,6 @@ export const register = async (
     throw new Error(getRegistrationErrorMessage(error));
   }
 };
-
-export interface AuthSessionResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresAt: string;
-}
-
-export interface CredentialLoginResponse {
-  requiresTwoFactor: boolean;
-  challengeToken?: string | null;
-  expiresAt?: string | null;
-  accessToken?: string | null;
-  tokenType?: string | null;
-  message?: string | null;
-}
-
-export interface TwoFactorStatus {
-  available: boolean;
-  enabled: boolean;
-}
 
 export const login = async (
   email: string,
@@ -100,37 +85,6 @@ export const loginWithExternalProvider = async (
 
 export const logout = async (): Promise<void> => {
   await apiClient.post("/api/auth/logout");
-};
-
-export const getUserIdFromToken = (token: string): number => {
-  const payload = token.split(".")[1];
-
-  if (!payload) {
-    throw new Error("El token recibido no tiene un formato JWT válido.");
-  }
-
-  try {
-    const base64 = payload
-      .replace(/-/g, "+")
-      .replace(/_/g, "/")
-      .padEnd(Math.ceil(payload.length / 4) * 4, "=");
-    const decodedPayload = JSON.parse(atob(base64)) as { sub?: unknown };
-    const userId =
-      typeof decodedPayload.sub === "string"
-        ? Number.parseInt(decodedPayload.sub, 10)
-        : Number.NaN;
-
-    if (!Number.isSafeInteger(userId) || userId <= 0) {
-      throw new Error("El token no contiene un identificador de usuario válido.");
-    }
-
-    return userId;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("identificador")) {
-      throw error;
-    }
-    throw new Error("No fue posible leer el usuario del token recibido.");
-  }
 };
 
 const getAuthErrorMessage = (error: unknown): string => {

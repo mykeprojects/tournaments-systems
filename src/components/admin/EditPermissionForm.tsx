@@ -7,9 +7,9 @@ import {
 import {
   deletePermission,
   updatePermission,
-  type Permission,
 } from "../../services/roleService";
 import { getUserServiceErrorMessage } from "../../services/userService";
+import type { Permission } from "../../models/authorization";
 
 const INPUT_CLASS =
   "mt-2 w-full rounded-xl border border-[#245078] bg-[#071321] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-[#3dff7a] focus:ring-2 focus:ring-[#3dff7a]/20";
