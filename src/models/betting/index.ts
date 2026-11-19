@@ -7,3 +7,4 @@ export type { FanPaymentMethod } from "./FanPaymentMethod";
 export type { Match } from "./Match";
 export type { MatchStatus } from "./MatchStatus";
 export type { OfficialResult } from "./OfficialResult";
+export type { PaymentMethodCatalog, PaymentMethodType } from "./PaymentMethodCatalog";

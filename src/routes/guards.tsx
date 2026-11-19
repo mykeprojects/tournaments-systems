@@ -19,7 +19,11 @@ export const AuthGuard = () => {
   );
 };
 
-export const RoleGuard = ({ requiredRole }: { requiredRole: ApplicationRole }) => {
+export const RoleGuard = ({
+  requiredRole,
+}: {
+  requiredRole: ApplicationRole | ApplicationRole[];
+}) => {
   const { user, roleLoading, roleLoadError, roles } = useAuth();
   const location = useLocation();
 
@@ -29,7 +33,11 @@ export const RoleGuard = ({ requiredRole }: { requiredRole: ApplicationRole }) =
   if (roleLoading) {
     return <FullScreenLoader message="Validando rol..." />;
   }
-  if (roleLoadError || !hasApplicationRole(roles.map((role) => role.name), requiredRole)) {
+  const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+  if (
+    roleLoadError ||
+    !requiredRoles.some((role) => hasApplicationRole(roles.map((item) => item.name), role))
+  ) {
     return <Navigate to={routePaths.forbidden} replace />;
   }
   return <Outlet />;

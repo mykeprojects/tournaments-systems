@@ -6,7 +6,10 @@ import ResetPassword, { SetNewPassword } from "../pages/Authentication/ResetPass
 import RoleLanding from "../pages/Protected/RoleLanding";
 import RoleManagement from "../pages/Protected/RoleManagement";
 import FanBetsPage from "../pages/Protected/FanBetsPage";
+import FanPaymentMethodsPage from "../pages/Protected/FanPaymentMethodsPage";
 import SportsAdminBetsPage from "../pages/Protected/SportsAdminBetsPage";
+import MatchManagementPage from "../pages/Protected/MatchManagementPage";
+import MatchTrackingPage from "../pages/Protected/MatchTrackingPage";
 import Forbidden from "../pages/Protected/Forbidden";
 import AppShellLayout from "../sports/AppShellLayout";
 import SportsLayout from "../sports/SportsLayout";
@@ -52,11 +55,18 @@ export const router = createBrowserRouter([
           },
           {
             element: <RoleGuard requiredRole="fan" />,
-            children: [{ path: routePaths.bets, element: <FanBetsPage /> }],
+            children: [
+              { path: routePaths.bets, element: <FanBetsPage /> },
+              { path: routePaths.paymentMethods, element: <FanPaymentMethodsPage /> },
+            ],
           },
           {
             element: <RoleGuard requiredRole="sportsAdmin" />,
             children: [{ path: routePaths.sportsBets, element: <SportsAdminBetsPage /> }],
+          },
+          {
+            element: <RoleGuard requiredRole={["sportsAdmin", "fan"]} />,
+            children: [{ path: routePaths.tracking, element: <MatchTrackingPage /> }],
           },
           {
             element: <RoleGuard requiredRole="sportsAdmin" />,
@@ -74,6 +84,7 @@ export const router = createBrowserRouter([
                   { path: "habilidades", element: <HabilidadesPage /> },
                   { path: "habilidades/asignar", element: <AsignarHabilidadesPage /> },
                   { path: "perfil", element: <PerfilDeportivoPage /> },
+                  { path: "partidos", element: <MatchManagementPage /> },
                 ],
               },
             ],

@@ -4,6 +4,7 @@ import type {
   CreateBetInput,
   FanPaymentMethod,
   Match,
+  PaymentMethodCatalog,
 } from "../models/betting";
 
 export const bettingService = {
@@ -19,6 +20,44 @@ export const bettingService = {
 
   async listPaymentMethods(): Promise<FanPaymentMethod[]> {
     const response = await sportClient.get<FanPaymentMethod[]>("/fans/me/payment-methods");
+    return response.data;
+  },
+
+  async listPaymentMethodCatalog(): Promise<PaymentMethodCatalog[]> {
+    const response = await sportClient.get<PaymentMethodCatalog[]>(
+      "/payment-method"
+    );
+    return response.data;
+  },
+
+  async createPaymentMethod(input: {
+    paymentMethodId: number;
+    maskedReference?: string;
+    holderName?: string;
+    isActive?: boolean;
+  }): Promise<FanPaymentMethod> {
+    const response = await sportClient.post<FanPaymentMethod>(
+      "/fans/me/payment-methods",
+      input
+    );
+    return response.data;
+  },
+
+  async updatePaymentMethod(
+    id: number,
+    input: { maskedReference?: string; holderName?: string; isActive?: boolean }
+  ): Promise<FanPaymentMethod> {
+    const response = await sportClient.patch<FanPaymentMethod>(
+      `/fans/me/payment-methods/${id}`,
+      input
+    );
+    return response.data;
+  },
+
+  async removePaymentMethod(id: number): Promise<{ message: string }> {
+    const response = await sportClient.delete<{ message: string }>(
+      `/fans/me/payment-methods/${id}`
+    );
     return response.data;
   },
 

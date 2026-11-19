@@ -17,7 +17,15 @@ export function SportsShell({ children }: { children: ReactNode }) {
   const roleLabel = applicationRoleLabel(roleNames);
   const nav = [
     ...(isFan
-      ? [{ to: routePaths.bets, label: "Mis apuestas", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.bets) }]
+      ? [
+          { to: routePaths.bets, label: "Mis apuestas", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.bets) },
+          { to: routePaths.paymentMethods, label: "Métodos de pago", icon: <ShieldIcon />, active: (path: string) => path.startsWith(routePaths.paymentMethods) },
+        ]
+      : []),
+    ...(isFan || isSportsAdmin
+      ? [
+          { to: routePaths.tracking, label: "Seguimiento en vivo", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.tracking) },
+        ]
       : []),
     ...(isSportsAdmin
       ? [
@@ -26,6 +34,7 @@ export function SportsShell({ children }: { children: ReactNode }) {
           { to: routePaths.sportsPlayers, label: "Jugadores", icon: <PlayerIcon />, active: (path: string) => path.startsWith("/gestion/jugadores") },
           { to: routePaths.sportsSkills, label: "Habilidades", icon: <StarIcon />, active: (path: string) => path.startsWith("/gestion/habilidades") },
           { to: routePaths.sportsProfile, label: "Perfil Deportivo", icon: <ChartIcon />, active: (path: string) => path.startsWith("/gestion/perfil") },
+          { to: routePaths.sportsMatches, label: "Partidos", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.sportsMatches) },
           { to: routePaths.sportsBets, label: "Apuestas por partido", icon: <ChartIcon />, active: (path: string) => path.startsWith(routePaths.sportsBets) },
         ]
       : []),

@@ -17,6 +17,9 @@ export const routePaths = {
   sportsSkills: "/gestion/habilidades",
   sportsSkillAssign: "/gestion/habilidades/asignar",
   sportsProfile: "/gestion/perfil",
+  sportsMatches: "/gestion/partidos",
   bets: "/apuestas",
+  paymentMethods: "/metodos-pago",
   sportsBets: "/gestion/apuestas",
+  tracking: "/seguimiento",
 } as const;
