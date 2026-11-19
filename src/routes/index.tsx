@@ -15,6 +15,13 @@ import HabilidadesPage from "../sports/pages/HabilidadesPage";
 import JugadoresPage from "../sports/pages/JugadoresPage";
 import PerfilDeportivoPage from "../sports/pages/PerfilDeportivoPage";
 import PlantillaPage from "../sports/pages/PlantillaPage";
+import TorneosPage from "../sports/pages/TorneosPage";
+import TorneoDesarrolloPage from "../sports/pages/TorneoDesarrolloPage";
+import InscripcionesPage from "../sports/pages/InscripcionesPage";
+import FasesPage from "../sports/pages/FasesPage";
+import GruposPage from "../sports/pages/GruposPage";
+import FasesFinalesPage from "../sports/pages/FasesFinalesPage";
+import PartidosPage from "../sports/pages/PartidosPage";
 import { AuthGuard } from "./guards";
 import { routePaths } from "./routePaths";
 
@@ -56,6 +63,13 @@ export const router = createBrowserRouter([
           { path: "habilidades", element: <HabilidadesPage /> },
           { path: "habilidades/asignar", element: <AsignarHabilidadesPage /> },
           { path: "perfil", element: <PerfilDeportivoPage /> },
+          { path: "torneos", element: <TorneosPage /> },
+          { path: "torneos/:id/desarrollo", element: <TorneoDesarrolloPage /> },
+          { path: "inscripciones", element: <InscripcionesPage /> },
+          { path: "fases", element: <FasesPage /> },
+          { path: "grupos", element: <GruposPage /> },
+          { path: "fases-finales", element: <FasesFinalesPage /> },
+          { path: "partidos", element: <PartidosPage /> },
         ],
       },
         ],

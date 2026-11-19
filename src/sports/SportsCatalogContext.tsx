@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import axios from "axios";
 import type {
   ActionResult,
   AssignContractInput,
@@ -62,6 +63,11 @@ export function SportsCatalogProvider({ children }: { children: ReactNode }) {
       })
       .catch((error: unknown) => {
         if (!active) return;
+        if (axios.isAxiosError(error) && error.response?.status === 403) {
+          setData(emptyCatalog());
+          setReady(true);
+          return;
+        }
         setLoadError(readSportError(error));
         setReady(true);
       });

@@ -259,6 +259,33 @@ const skillBody = (input: SkillInput) => ({
   ...(input.glyph ? { glyph: input.glyph } : {}),
 });
 
+export type RemoteFollowedTeam = {
+  teamId: number;
+  code: string;
+  name: string;
+  shortName: string;
+  city: string;
+  description: string;
+  status: Status;
+  createdAt: string;
+  color: string;
+  sports: { id: number; name: string; parentId: number | null }[];
+  followedAt: string;
+};
+
+export const fanTeamRequests = {
+  listTeams: () => sportClient.get<RemoteTeam[]>("/teams"),
+  listFollowedTeams: () => sportClient.get<RemoteFollowedTeam[]>("/fans/me/followed-teams"),
+  followTeam: (teamId: string | number) =>
+    sportClient.post<{ followed: boolean; teamId: number; message: string }>("/fans/me/followed-teams", {
+      teamId: Number(teamId),
+    }),
+  unfollowTeam: (teamId: string | number) =>
+    sportClient.delete<{ followed: boolean; teamId: number; message: string }>(
+      `/fans/me/followed-teams/${Number(teamId)}`,
+    ),
+};
+
 export const catalogRequests = {
   saveSport: (input: SportInput) =>
     input.id

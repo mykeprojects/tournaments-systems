@@ -20,6 +20,15 @@ export function BallIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function TrophyIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M7 4h10v3.5c0 4-1.8 6.5-5 7.5-3.2-1-5-3.5-5-7.5V4Z" />
+      <path d="M7 6H3.5v1.5C3.5 10 5 12 8 12M17 6h3.5v1.5C20.5 10 19 12 16 12M12 15v4M8 20h8" />
+    </Svg>
+  );
+}
+
 export function TeamsIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <Svg className={className}>

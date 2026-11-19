@@ -17,6 +17,7 @@ export interface AuthContextType {
   loading: boolean;
   permissions: Permission[];
   permissionCheckError: string | null;
+  roleName: string | null;
   hasPermission: (permission: PermissionKey) => boolean;
   loginWithCredentials: (email: string, password: string) => Promise<CredentialsLoginResult>;
   completeTwoFactorLogin: (

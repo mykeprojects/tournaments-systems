@@ -29,11 +29,28 @@ import {
   AuthContext,
   type AuthenticatedUser,
 } from "./AuthContextDefinition";
+import apiClient from "../interceptors/apiClient";
 
 interface StoredSession {
   user: AuthenticatedUser | null;
   expiresAt: number | null;
 }
+
+interface UserRolesResponse {
+  roles?: Array<{ role: { name: string } }>;
+}
+
+const fetchRoleName = async (userId: number): Promise<string | null> => {
+  try {
+    const response = await apiClient.get<UserRolesResponse>(
+      `/api/users/${userId}/detail-with-roles`
+    );
+    const firstName = response.data?.roles?.[0]?.role?.name ?? null;
+    return firstName;
+  } catch {
+    return null;
+  }
+};
 
 const readStoredSession = (): StoredSession => {
   const session = getAuthSession();
@@ -72,6 +89,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(Boolean(storedSession.user));
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [permissionCheckError, setPermissionCheckError] = useState<string | null>(null);
+  const [roleName, setRoleName] = useState<string | null>(null);
 
   useEffect(() => {
     setTokenProvider(async () => getAuthToken());
@@ -81,18 +99,24 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setExpiresAt(null);
       setPermissions([]);
       setPermissionCheckError(null);
+      setRoleName(null);
     });
 
     if (!storedSession.user) {
       clearStoredSession();
     } else {
-      void listCurrentUserPermissions(storedSession.user.id)
-        .then((loadedPermissions) => {
+      void Promise.all([
+        listCurrentUserPermissions(storedSession.user.id),
+        fetchRoleName(storedSession.user.id),
+      ])
+        .then(([loadedPermissions, loadedRoleName]) => {
           setPermissions(loadedPermissions);
+          setRoleName(loadedRoleName);
           setPermissionCheckError(null);
         })
         .catch((error: unknown) => {
           setPermissions([]);
+          setRoleName(null);
           setPermissionCheckError(
             error instanceof Error
               ? error.message
@@ -119,6 +143,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setExpiresAt(null);
       setPermissions([]);
       setPermissionCheckError(null);
+      setRoleName(null);
     }, Math.max(0, expiresAt - Date.now()));
 
     return () => window.clearTimeout(timeout);
@@ -140,10 +165,16 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setExpiresAt(expirationTime);
     setPermissions([]);
     setPermissionCheckError(null);
+    setRoleName(null);
     setLoading(true);
 
     try {
-      setPermissions(await listCurrentUserPermissions(userId));
+      const [loadedPermissions, loadedRoleName] = await Promise.all([
+        listCurrentUserPermissions(userId),
+        fetchRoleName(userId),
+      ]);
+      setPermissions(loadedPermissions);
+      setRoleName(loadedRoleName);
     } catch (error) {
       setPermissionCheckError(
         error instanceof Error
@@ -227,9 +258,15 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setPermissionCheckError(null);
 
     try {
-      setPermissions(await listCurrentUserPermissions(user.id));
+      const [loadedPermissions, loadedRoleName] = await Promise.all([
+        listCurrentUserPermissions(user.id),
+        fetchRoleName(user.id),
+      ]);
+      setPermissions(loadedPermissions);
+      setRoleName(loadedRoleName);
     } catch (error) {
       setPermissions([]);
+      setRoleName(null);
       setPermissionCheckError(
         error instanceof Error
           ? error.message
@@ -249,6 +286,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
       setExpiresAt(null);
       setPermissions([]);
       setPermissionCheckError(null);
+      setRoleName(null);
       setLoading(false);
     }
   };
@@ -261,6 +299,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     loading,
     permissions,
     permissionCheckError,
+    roleName,
     hasPermission,
     loginWithCredentials,
     completeTwoFactorLogin,

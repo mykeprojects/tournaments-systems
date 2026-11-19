@@ -94,8 +94,18 @@ describe("permission-based UI authorization", () => {
       "profiles.create",
       "profiles.edit",
       "profiles.delete",
+      "matches.view",
     ];
 
-    expect(keys.every((permission) => hasPermission(permissions, permission))).toBe(true);
+    expect(
+      hasPermission(
+        [...permissions, grant("GET", "/matches")],
+        "matches.view"
+      )
+    ).toBe(true);
+    expect(keys.every((permission) => hasPermission(
+      [...permissions, grant("GET", "/matches")],
+      permission
+    ))).toBe(true);
   });
 });
