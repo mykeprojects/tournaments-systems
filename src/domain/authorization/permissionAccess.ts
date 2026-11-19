@@ -31,6 +31,7 @@ const PERMISSION_ROUTES: Record<PermissionKey, RouteGrant[]> = {
   "profiles.create": [{ method: "POST", url: "/api/users/{id}/profile" }],
   "profiles.edit": [{ method: "PUT", url: "/api/users/{id}/profile" }],
   "profiles.delete": [{ method: "DELETE", url: "/api/users/{id}/profile" }],
+  "matches.view": [{ method: "GET", url: "/matches" }],
 };
 
 const normalizeRoute = (url: string): string =>

@@ -17,4 +17,5 @@ export type PermissionKey =
   | "profiles.view"
   | "profiles.create"
   | "profiles.edit"
-  | "profiles.delete";
+  | "profiles.delete"
+  | "matches.view";

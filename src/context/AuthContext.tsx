@@ -193,25 +193,16 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     setRoleLoading(true);
 
-<<<<<<< HEAD
-    try {
-      const [loadedPermissions, loadedRoleName] = await Promise.all([
-        listCurrentUserPermissions(userId),
-        fetchRoleName(userId),
-      ]);
-      setPermissions(loadedPermissions);
-      setRoleName(loadedRoleName);
-    } catch (error) {
-=======
-    const [permissionResult, roleResult] = await Promise.allSettled([
+    const [permissionResult, roleResult, roleNameResult] = await Promise.allSettled([
       listCurrentUserPermissions(userId),
       getUserRoleAssignments(userId),
+      fetchRoleName(userId),
     ]);
     if (permissionResult.status === "fulfilled") {
       setPermissions(permissionResult.value);
       setPermissionCheckError(null);
     } else {
->>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
+      setPermissions([]);
       setPermissionCheckError(
         permissionResult.reason instanceof Error
           ? permissionResult.reason.message
@@ -229,6 +220,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
           : "No fue posible consultar los roles de esta cuenta."
       );
     }
+    setRoleName(roleNameResult.status === "fulfilled" ? roleNameResult.value : null);
     setLoading(false);
     setRoleLoading(false);
   };
@@ -306,26 +298,15 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     setPermissionCheckError(null);
     setRoleLoadError(null);
 
-<<<<<<< HEAD
-    try {
-      const [loadedPermissions, loadedRoleName] = await Promise.all([
-        listCurrentUserPermissions(user.id),
-        fetchRoleName(user.id),
-      ]);
-      setPermissions(loadedPermissions);
-      setRoleName(loadedRoleName);
-    } catch (error) {
-=======
-    const [permissionResult, roleResult] = await Promise.allSettled([
+    const [permissionResult, roleResult, roleNameResult] = await Promise.allSettled([
       listCurrentUserPermissions(user.id),
       getUserRoleAssignments(user.id),
+      fetchRoleName(user.id),
     ]);
     if (permissionResult.status === "fulfilled") {
       setPermissions(permissionResult.value);
     } else {
->>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
       setPermissions([]);
-      setRoleName(null);
       setPermissionCheckError(
         permissionResult.reason instanceof Error
           ? permissionResult.reason.message
@@ -342,6 +323,7 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
           : "No fue posible consultar los roles de esta cuenta."
       );
     }
+    setRoleName(roleNameResult.status === "fulfilled" ? roleNameResult.value : null);
     setLoading(false);
     setRoleLoading(false);
   };

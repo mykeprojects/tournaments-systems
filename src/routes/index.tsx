@@ -21,18 +21,13 @@ import HabilidadesPage from "../sports/pages/HabilidadesPage";
 import JugadoresPage from "../sports/pages/JugadoresPage";
 import PerfilDeportivoPage from "../sports/pages/PerfilDeportivoPage";
 import PlantillaPage from "../sports/pages/PlantillaPage";
-<<<<<<< HEAD
 import TorneosPage from "../sports/pages/TorneosPage";
 import TorneoDesarrolloPage from "../sports/pages/TorneoDesarrolloPage";
 import InscripcionesPage from "../sports/pages/InscripcionesPage";
 import FasesPage from "../sports/pages/FasesPage";
 import GruposPage from "../sports/pages/GruposPage";
 import FasesFinalesPage from "../sports/pages/FasesFinalesPage";
-import PartidosPage from "../sports/pages/PartidosPage";
-import { AuthGuard } from "./guards";
-=======
 import { AuthGuard, RoleGuard } from "./guards";
->>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
 import { routePaths } from "./routePaths";
 
 export { routePaths };
@@ -52,42 +47,6 @@ export const router = createBrowserRouter([
       {
         element: <AppShellLayout />,
         children: [
-<<<<<<< HEAD
-      {
-        path: routePaths.dashboard,
-        element: <Dashboard />,
-      },
-      {
-        path: routePaths.admin,
-        element: <Dashboard />,
-      },
-      {
-        path: routePaths.roles,
-        element: <RoleManagement />,
-      },
-      {
-        path: "/gestion",
-        element: <SportsLayout />,
-        children: [
-          { index: true, element: <Navigate to={routePaths.sports} replace /> },
-          { path: "deportes", element: <DeportesPage /> },
-          { path: "equipos", element: <EquiposPage /> },
-          { path: "equipos/asociar", element: <AsociarDeportesPage /> },
-          { path: "equipos/plantilla", element: <PlantillaPage /> },
-          { path: "jugadores", element: <JugadoresPage /> },
-          { path: "habilidades", element: <HabilidadesPage /> },
-          { path: "habilidades/asignar", element: <AsignarHabilidadesPage /> },
-          { path: "perfil", element: <PerfilDeportivoPage /> },
-          { path: "torneos", element: <TorneosPage /> },
-          { path: "torneos/:id/desarrollo", element: <TorneoDesarrolloPage /> },
-          { path: "inscripciones", element: <InscripcionesPage /> },
-          { path: "fases", element: <FasesPage /> },
-          { path: "grupos", element: <GruposPage /> },
-          { path: "fases-finales", element: <FasesFinalesPage /> },
-          { path: "partidos", element: <PartidosPage /> },
-        ],
-      },
-=======
           {
             path: routePaths.dashboard,
             element: <RoleLanding />,
@@ -131,12 +90,17 @@ export const router = createBrowserRouter([
                   { path: "habilidades", element: <HabilidadesPage /> },
                   { path: "habilidades/asignar", element: <AsignarHabilidadesPage /> },
                   { path: "perfil", element: <PerfilDeportivoPage /> },
+                  { path: "torneos", element: <TorneosPage /> },
+                  { path: "torneos/:id/desarrollo", element: <TorneoDesarrolloPage /> },
+                  { path: "inscripciones", element: <InscripcionesPage /> },
+                  { path: "fases", element: <FasesPage /> },
+                  { path: "grupos", element: <GruposPage /> },
+                  { path: "fases-finales", element: <FasesFinalesPage /> },
                   { path: "partidos", element: <MatchManagementPage /> },
                 ],
               },
             ],
           },
->>>>>>> 40236391b2d4f2b7e06a9bfd195d885258b99dbb
         ],
       },
     ],
