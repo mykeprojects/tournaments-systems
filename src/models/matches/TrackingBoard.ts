@@ -5,7 +5,7 @@ export type TrackingBoard = {
   sportName: string;
   playersPerTeam: number;
   field: { width: number; height: number };
-  status: "RUNNING" | "STOPPED";
+  status: "RUNNING" | "PAUSED" | "STOPPED";
   teams: {
     side: "HOME" | "AWAY";
     teamId: number;

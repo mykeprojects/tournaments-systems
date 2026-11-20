@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { hasApplicationRole } from "../../domain/authorization/roleAccess";
 import { useAuth } from "../../hooks/useAuth";
 import { useSportsCatalog } from "../SportsCatalogContext";
 import { fieldClass, formatDate, primaryButtonClass } from "../format";
@@ -46,8 +47,10 @@ const emptyForm = (): TournamentInput => ({
 });
 
 export default function TorneosPage() {
-  const { roleName } = useAuth();
-  const isFan = (roleName ?? "").trim().toUpperCase() === "AFICIONADO";
+  const { roles } = useAuth();
+  const roleNames = roles.map((role) => role.name);
+  const canManageTournaments = hasApplicationRole(roleNames, "sportsAdmin");
+  const isFan = hasApplicationRole(roleNames, "fan") && !canManageTournaments;
   const catalog = useSportsCatalog();
   const [items, setItems] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +76,7 @@ export default function TorneosPage() {
   useEffect(() => {
     document.title = `${isFan ? "Torneos" : "Gestión de Torneos"} - Sports System`;
     void reload();
-  }, []);
+  }, [isFan]);
 
   const sports = catalog.sports.filter((sport) => sport.parentId === null);
 
@@ -88,14 +91,14 @@ export default function TorneosPage() {
   const paging = usePaged(filtered, 8, `${query}|${status}|${sportId}`);
 
   const openCreate = () => {
-    if (isFan) return;
+    if (!canManageTournaments) return;
     setForm({ ...emptyForm(), sportId: sports[0] ? Number(sports[0].id) : 0 });
     setErrors({});
     setModalOpen(true);
   };
 
   const openEdit = (item: Tournament) => {
-    if (isFan) return;
+    if (!canManageTournaments) return;
     setForm({
       id: item.id,
       name: item.name,
@@ -112,7 +115,7 @@ export default function TorneosPage() {
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isFan) return;
+    if (!canManageTournaments) return;
     const nextErrors: Record<string, string> = {};
     if (!form.name.trim()) nextErrors.name = "Este campo es obligatorio.";
     if (!form.sportId) nextErrors.sportId = "Selecciona un deporte.";
@@ -135,7 +138,7 @@ export default function TorneosPage() {
   };
 
   const handleDelete = async (item: Tournament) => {
-    if (isFan) return;
+    if (!canManageTournaments) return;
     if (item.status === "IN_PROGRESS") {
       setNotice({ tone: "error", title: "No se puede eliminar", message: "Un torneo en progreso no puede eliminarse." });
       return;
@@ -235,7 +238,7 @@ export default function TorneosPage() {
                           >
                             Ver desarrollo
                           </Link>
-                          {!isFan && (
+                          {canManageTournaments && (
                             <>
                               <IconButton label={`Editar ${item.name}`} tone="edit" onClick={() => openEdit(item)} />
                               <IconButton label={`Eliminar ${item.name}`} tone="delete" onClick={() => void handleDelete(item)} />
@@ -254,7 +257,7 @@ export default function TorneosPage() {
         )}
       </Panel>
 
-      {modalOpen && !isFan && (
+      {modalOpen && canManageTournaments && (
         <Modal title={form.id ? "Editar torneo" : "Nuevo torneo"} onClose={() => setModalOpen(false)}>
           <form onSubmit={handleSave} className="grid gap-4 md:grid-cols-2">
             <Field label="Nombre" required error={errors.name}>

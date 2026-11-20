@@ -7,6 +7,7 @@ import { useState } from "react";
 import { hasApplicationRole } from "../domain/authorization/roleAccess";
 import { useAuth } from "../hooks/useAuth";
 import RoleLanding from "../pages/Protected/RoleLanding";
+import Dashboard from "../pages/Protected/Dashboard";
 import RoleManagement from "../pages/Protected/RoleManagement";
 import FanBetsPage from "../pages/Protected/FanBetsPage";
 import FanPaymentMethodsPage from "../pages/Protected/FanPaymentMethodsPage";
@@ -99,12 +100,16 @@ export const router = createBrowserRouter([
             element: <RoleLanding />,
           },
           {
+            path: routePaths.accountProfile,
+            element: <Dashboard />,
+          },
+          {
             path: routePaths.admin,
             element: <RoleLanding />,
           },
           {
-            path: routePaths.roles,
-            element: <RoleManagement />,
+            element: <RoleGuard requiredRole="administrator" />,
+            children: [{ path: routePaths.roles, element: <RoleManagement /> }],
           },
           {
             element: <RoleGuard requiredRole="fan" />,

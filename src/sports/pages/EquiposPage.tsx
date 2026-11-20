@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { hasApplicationRole } from "../../domain/authorization/roleAccess";
 import { useAuth } from "../../hooks/useAuth";
 import { routePaths } from "../../routes/routePaths";
 import { NameLookup } from "../NameLookup";
@@ -355,8 +356,10 @@ function FanEquiposView() {
 }
 
 export default function EquiposPage() {
-  const { roleName } = useAuth();
-  const isFan = (roleName ?? "").trim().toUpperCase() === "AFICIONADO";
+  const { roles } = useAuth();
+  const roleNames = roles.map((role) => role.name);
+  const isFan = hasApplicationRole(roleNames, "fan")
+    && !hasApplicationRole(roleNames, "sportsAdmin");
 
   if (isFan) {
     return <FanEquiposView />;

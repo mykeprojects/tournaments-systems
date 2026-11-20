@@ -9,6 +9,7 @@ describe("application role access", () => {
 
   it("does not grant sports administration to a generic administrator", () => {
     expect(hasApplicationRole(["ADMIN"], "sportsAdmin")).toBe(false);
+    expect(hasApplicationRole(["ADMIN"], "administrator")).toBe(true);
   });
 
   it("provides the role label used by the application shell", () => {

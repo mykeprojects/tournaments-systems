@@ -8,6 +8,7 @@ export const routePaths = {
   dashboard: "/dashboard",
   admin: "/admin",
   roles: "/admin/roles",
+  accountProfile: "/mi-perfil",
   forbidden: "/forbidden",
   sports: "/gestion/deportes",
   sportsTeams: "/gestion/equipos",

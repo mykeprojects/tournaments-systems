@@ -21,6 +21,7 @@ export function SportsShell({ children }: { children: ReactNode }) {
   const isFan = hasApplicationRole(roleNames, "fan");
   const roleLabel = applicationRoleLabel(roleNames);
   const nav = [
+    { to: routePaths.accountProfile, label: "Mi perfil", icon: <UsersIcon />, active: (path: string) => path === routePaths.accountProfile },
     ...(isFan
       ? [
           { to: routePaths.bets, label: "Mis apuestas", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.bets) },
@@ -48,7 +49,7 @@ export function SportsShell({ children }: { children: ReactNode }) {
           { to: routePaths.sportsProfile, label: "Perfil Deportivo", icon: <ChartIcon />, active: (path: string) => path.startsWith("/gestion/perfil") },
           { to: routePaths.tournaments, label: "Torneos", icon: <TrophyIcon />, active: (path: string) => path.startsWith(routePaths.tournaments) },
           { to: routePaths.tournamentRegistrations, label: "Inscripciones", icon: <TeamsIcon />, active: (path: string) => path.startsWith(routePaths.tournamentRegistrations) },
-          { to: routePaths.tournamentPhases, label: "Fases", icon: <ChartIcon />, active: (path: string) => path.startsWith(routePaths.tournamentPhases) },
+          { to: routePaths.tournamentPhases, label: "Fases", icon: <ChartIcon />, active: (path: string) => path === routePaths.tournamentPhases },
           { to: routePaths.tournamentGroups, label: "Grupos", icon: <TeamsIcon />, active: (path: string) => path.startsWith(routePaths.tournamentGroups) },
           { to: routePaths.tournamentBrackets, label: "Fases finales", icon: <TrophyIcon />, active: (path: string) => path.startsWith(routePaths.tournamentBrackets) },
           { to: routePaths.sportsMatches, label: "Partidos", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.sportsMatches) },

@@ -42,6 +42,16 @@ export const matchTrackingService = {
     return response.data;
   },
 
+  async pause(matchId: number): Promise<TrackingBoard> {
+    const response = await sportClient.post<TrackingBoard>(`/matches/${matchId}/tracking/pause`);
+    return response.data;
+  },
+
+  async resume(matchId: number): Promise<TrackingBoard> {
+    const response = await sportClient.post<TrackingBoard>(`/matches/${matchId}/tracking/resume`);
+    return response.data;
+  },
+
   subscribe(
     matchId: number,
     onUpdate: (event: TrackingEvent) => void,

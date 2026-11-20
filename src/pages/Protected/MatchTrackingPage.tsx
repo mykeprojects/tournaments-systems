@@ -62,8 +62,9 @@ export default function MatchTrackingPage() {
   const [connectionState, setConnectionState] = useState<TrackingConnectionState>("DISCONNECTED");
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [loadingBoard, setLoadingBoard] = useState(false);
-  const [refreshingBoard, setRefreshingBoard] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [pausing, setPausing] = useState(false);
+  const [resuming, setResuming] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [showStopConfirmation, setShowStopConfirmation] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -152,19 +153,6 @@ export default function MatchTrackingPage() {
     };
   }, [applyEvent, selectedMatchId]);
 
-  const refreshBoard = async () => {
-    if (!selectedMatch) return;
-    setRefreshingBoard(true);
-    setTrackingError(null);
-    try {
-      setBoard(await matchTrackingService.getBoard(selectedMatch.id));
-    } catch (error) {
-      setTrackingError(readSportError(error));
-    } finally {
-      setRefreshingBoard(false);
-    }
-  };
-
   const startTracking = async () => {
     if (!selectedMatch) return;
     setStarting(true);
@@ -175,12 +163,52 @@ export default function MatchTrackingPage() {
       setBoard(startedBoard);
       setNotice({
         tone: "ok",
-        message: "Seguimiento iniciado. Las posiciones se actualizarán automáticamente.",
+        message: startedBoard.status === "PAUSED"
+          ? "El seguimiento está pausado. Reanúdalo para continuar recibiendo posiciones."
+          : "Seguimiento iniciado. Las posiciones se actualizarán automáticamente.",
       });
     } catch (error) {
       setTrackingError(readSportError(error));
     } finally {
       setStarting(false);
+    }
+  };
+
+  const pauseTracking = async () => {
+    if (!selectedMatch) return;
+    setPausing(true);
+    setTrackingError(null);
+    setNotice(null);
+    try {
+      const pausedBoard = await matchTrackingService.pause(selectedMatch.id);
+      setBoard(pausedBoard);
+      setNotice({
+        tone: "ok",
+        message: "Seguimiento pausado. No se enviarán posiciones hasta reanudarlo.",
+      });
+    } catch (error) {
+      setTrackingError(readSportError(error));
+    } finally {
+      setPausing(false);
+    }
+  };
+
+  const resumeTracking = async () => {
+    if (!selectedMatch) return;
+    setResuming(true);
+    setTrackingError(null);
+    setNotice(null);
+    try {
+      const resumedBoard = await matchTrackingService.resume(selectedMatch.id);
+      setBoard(resumedBoard);
+      setNotice({
+        tone: "ok",
+        message: "Seguimiento reanudado. Las posiciones volverán a actualizarse en vivo.",
+      });
+    } catch (error) {
+      setTrackingError(readSportError(error));
+    } finally {
+      setResuming(false);
     }
   };
 
@@ -208,6 +236,7 @@ export default function MatchTrackingPage() {
     selectedMatch?.status === "FINISHED" || selectedMatch?.status === "CANCELLED";
   const socketState = selectedMatch ? connectionState : "DISCONNECTED";
   const monitoredPlayers = board?.teams.reduce((total, team) => total + team.players.length, 0) ?? 0;
+  const trackingActionPending = starting || pausing || resuming || stopping;
 
   return (
     <div>
@@ -300,14 +329,6 @@ export default function MatchTrackingPage() {
                 {board ? ` · ${board.sportName}` : ""}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void refreshBoard()}
-              disabled={refreshingBoard || loadingBoard}
-              className={ghostButtonClass}
-            >
-              {refreshingBoard ? "Actualizando…" : "Actualizar posiciones"}
-            </button>
           </div>
 
           {loadingBoard ? (
@@ -346,10 +367,16 @@ export default function MatchTrackingPage() {
                       className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
                         board.status === "RUNNING"
                           ? "bg-emerald-400/15 text-emerald-200"
-                          : "bg-slate-500/20 text-slate-300"
+                          : board.status === "PAUSED"
+                            ? "bg-amber-300/15 text-amber-100"
+                            : "bg-slate-500/20 text-slate-300"
                       }`}
                     >
-                      {board.status === "RUNNING" ? "Seguimiento activo" : "Seguimiento finalizado"}
+                      {board.status === "RUNNING"
+                        ? "Seguimiento activo"
+                        : board.status === "PAUSED"
+                          ? "Seguimiento pausado"
+                          : "Seguimiento finalizado"}
                     </span>
                   }
                 >
@@ -404,28 +431,57 @@ export default function MatchTrackingPage() {
 
                 <Panel title="Controles del seguimiento">
                   <div className="space-y-3 p-4">
-                    {board.status === "RUNNING" ? (
+                    {board.status !== "STOPPED" ? (
                       canManageTracking ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowStopConfirmation(true)}
-                          disabled={stopping}
-                          className="w-full rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-2.5 text-sm font-bold text-red-200 transition hover:bg-red-400/20 disabled:opacity-50"
-                        >
-                          Finalizar seguimiento
-                        </button>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {board.status === "RUNNING" ? (
+                            <button
+                              type="button"
+                              onClick={() => void pauseTracking()}
+                              disabled={trackingActionPending}
+                              className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-4 py-2.5 text-sm font-bold text-amber-100 transition hover:bg-amber-300/20 disabled:opacity-50"
+                            >
+                              {pausing ? "Pausando…" : "Pausar seguimiento"}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void resumeTracking()}
+                              disabled={trackingActionPending}
+                              className={primaryButtonClass}
+                            >
+                              {resuming ? "Reanudando…" : "Reanudar seguimiento"}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setShowStopConfirmation(true)}
+                            disabled={trackingActionPending}
+                            className="rounded-lg border border-red-400/40 bg-red-400/10 px-4 py-2.5 text-sm font-bold text-red-200 transition hover:bg-red-400/20 disabled:opacity-50"
+                          >
+                            Finalizar seguimiento
+                          </button>
+                        </div>
                       ) : (
-                        <p className="rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-2 text-center text-sm font-semibold text-emerald-200">
-                          Seguimiento en vivo activo
+                        <p className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold ${
+                          board.status === "RUNNING"
+                            ? "border-emerald-400/20 bg-emerald-400/5 text-emerald-200"
+                            : "border-amber-300/20 bg-amber-300/5 text-amber-100"
+                        }`}>
+                          {board.status === "RUNNING" ? "Seguimiento en vivo activo" : "Seguimiento pausado"}
                         </p>
                       )
                     ) : (
                       <p className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-center text-sm text-slate-300">
-                        El seguimiento está detenido y su historial fue conservado.
+                        El seguimiento finalizó y su historial fue conservado.
                       </p>
                     )}
                     <p className="text-xs leading-5 text-slate-400">
-                      Las posiciones se simulan y publican automáticamente. Finalizar no elimina el partido, sus jugadores ni las posiciones registradas.
+                      {board.status === "RUNNING"
+                        ? "Las posiciones se simulan y publican automáticamente. Puedes pausarlas o finalizar el seguimiento."
+                        : board.status === "PAUSED"
+                          ? "No se envían posiciones al canal en vivo mientras está pausado. Reanúdalo cuando decidas continuar."
+                          : "Finalizar detiene las actualizaciones de forma definitiva y conserva el partido y el historial de posiciones."}
                     </p>
                   </div>
                 </Panel>
@@ -439,7 +495,7 @@ export default function MatchTrackingPage() {
       {showStopConfirmation && (
         <Modal title="Finalizar seguimiento" onClose={() => setShowStopConfirmation(false)}>
           <p className="text-sm leading-6 text-slate-300">
-            Se detendrán las actualizaciones en vivo. El partido, los jugadores y el historial de posiciones permanecerán guardados.
+            Se detendrán definitivamente las actualizaciones en vivo. El partido, los jugadores y el historial de posiciones permanecerán guardados.
           </p>
           <div className="mt-5 flex justify-end gap-3">
             <button
@@ -448,7 +504,7 @@ export default function MatchTrackingPage() {
               className={ghostButtonClass}
               disabled={stopping}
             >
-              Continuar seguimiento
+              {board?.status === "PAUSED" ? "Mantener pausado" : "Continuar seguimiento"}
             </button>
             <button
               type="button"

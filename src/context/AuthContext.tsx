@@ -346,12 +346,12 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const isPrivilegedAdmin = hasApplicationRole(
+  const isAdministrator = hasApplicationRole(
     roles.map((role) => role.name),
-    "sportsAdmin"
+    "administrator"
   );
   const hasPermission = (permission: PermissionKey): boolean =>
-    isPrivilegedAdmin || checkPermission(permissions, permission);
+    isAdministrator || checkPermission(permissions, permission);
 
   const value = {
     user,

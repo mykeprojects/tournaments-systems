@@ -1,11 +1,11 @@
 ﻿import type { Role, UserRoleAssignment } from "../../models/user";
 
-export type ApplicationRole = "fan" | "sportsAdmin";
+export type ApplicationRole = "administrator" | "fan" | "sportsAdmin";
 
 export const ADMINISTRATOR_ROLE_ASSIGNMENT_PROTECTED_MESSAGE =
   "No puedes quitar el rol de administrador a otro usuario que también tiene ese rol.";
 
-const ROLE_NAMES: Record<ApplicationRole, Set<string>> = {
+const ROLE_NAMES: Record<Exclude<ApplicationRole, "administrator">, Set<string>> = {
   fan: new Set(["AFICIONADO", "HINCHA", "FAN"]),
   sportsAdmin: new Set([
     "ADMINISTRADOR DEPORTIVO",
@@ -16,8 +16,12 @@ const ROLE_NAMES: Record<ApplicationRole, Set<string>> = {
 
 const ADMIN_ROLE_NAMES = new Set([
   "ADMIN",
-  "ADMINISTRADOR",
   "ROLE ADMIN",
+]);
+
+const ADMIN_ROLE_ASSIGNMENT_NAMES = new Set([
+  ...ADMIN_ROLE_NAMES,
+  "ADMINISTRADOR",
   "ROLE ADMINISTRADOR",
 ]);
 
@@ -43,7 +47,7 @@ export const isAdministratorRoleAssignmentRemovalProtected = (
 ): boolean =>
   currentUserId !== undefined &&
   currentUserId !== targetUserId &&
-  isAdministratorRole(targetRole) &&
+  ADMIN_ROLE_ASSIGNMENT_NAMES.has(normalizeRoleName(targetRole.name)) &&
   assignments.some(
     (assignment) =>
       assignment.userId === currentUserId &&
@@ -57,8 +61,9 @@ export const hasApplicationRole = (
   roleNames.some((name) => {
     const normalized = normalizeRoleName(name);
     if (ADMIN_ROLE_NAMES.has(normalized)) {
-      return requiredRole === "sportsAdmin";
+      return requiredRole === "administrator";
     }
+    if (requiredRole === "administrator") return false;
     return ROLE_NAMES[requiredRole].has(normalized);
   });
 
