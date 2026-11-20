@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { hasApplicationRole } from "../../domain/authorization/roleAccess";
 import { useAuth } from "../../hooks/useAuth";
 import { fieldClass, formatDate, primaryButtonClass } from "../format";
 import { ChartIcon } from "../glyphs";
@@ -84,8 +85,9 @@ const statusClass: Record<MatchStatus, string> = {
 };
 
 export default function PartidosPage() {
-  const { hasPermission, roleName } = useAuth();
-  const isFan = (roleName ?? "").trim().toUpperCase() === "AFICIONADO";
+  const { hasPermission, roles } = useAuth();
+  const roleNames = roles.map((role) => role.name);
+  const isFan = hasApplicationRole(roleNames, "fan") && !hasApplicationRole(roleNames, "sportsAdmin");
   const canViewMatches = hasPermission("matches.view");
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [tournamentId, setTournamentId] = useState("");
@@ -99,7 +101,7 @@ export default function PartidosPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  const canManageMatches = !isFan && tournaments.length > 0;
+  const canManageMatches = hasApplicationRole(roleNames, "sportsAdmin");
 
   const selectedTournament = useMemo(
     () => tournaments.find((item) => String(item.id) === tournamentId) ?? null,

@@ -11,6 +11,7 @@ import {
 } from "../services/authService";
 import { getUserIdFromToken } from "../domain/auth/token";
 import { hasPermission as checkPermission } from "../domain/authorization/permissionAccess";
+import { hasApplicationRole } from "../domain/authorization/roleAccess";
 import { listCurrentUserPermissions } from "../services/authorizationService";
 import type { AuthSessionResponse } from "../models/auth";
 import type { Permission, PermissionKey } from "../models/authorization";
@@ -345,8 +346,12 @@ export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const isPrivilegedAdmin = hasApplicationRole(
+    roles.map((role) => role.name),
+    "sportsAdmin"
+  );
   const hasPermission = (permission: PermissionKey): boolean =>
-    checkPermission(permissions, permission);
+    isPrivilegedAdmin || checkPermission(permissions, permission);
 
   const value = {
     user,

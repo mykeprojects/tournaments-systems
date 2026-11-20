@@ -15,14 +15,15 @@ export default function RoleLanding() {
   if (roleLoadError) {
     return <Forbidden />;
   }
+  const roleNames = roles.map((role) => role.name);
   if (hasPermission("users.view") || hasPermission("roles.view")) {
     return <Dashboard />;
   }
-  if (hasApplicationRole(roles.map((role) => role.name), "fan")) {
-    return <Navigate to={routePaths.bets} replace />;
+  if (hasApplicationRole(roleNames, "sportsAdmin")) {
+    return <Navigate to={routePaths.sports} replace />;
   }
-  if (hasApplicationRole(roles.map((role) => role.name), "sportsAdmin")) {
-    return <Navigate to={routePaths.sportsBets} replace />;
+  if (hasApplicationRole(roleNames, "fan")) {
+    return <Navigate to={routePaths.bets} replace />;
   }
   return <Forbidden />;
 }

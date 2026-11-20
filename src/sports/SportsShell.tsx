@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+﻿import { useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { routePaths } from "../routes/routePaths";
@@ -25,6 +25,10 @@ export function SportsShell({ children }: { children: ReactNode }) {
       ? [
           { to: routePaths.bets, label: "Mis apuestas", icon: <BallIcon />, active: (path: string) => path.startsWith(routePaths.bets) },
           { to: routePaths.paymentMethods, label: "Métodos de pago", icon: <ShieldIcon />, active: (path: string) => path.startsWith(routePaths.paymentMethods) },
+        ]
+      : []),
+    ...(isFan && !isSportsAdmin
+      ? [
           { to: routePaths.sportsTeams, label: "Equipos", icon: <TeamsIcon />, active: (path: string) => path.startsWith("/gestion/equipos") },
           { to: routePaths.tournaments, label: "Torneos", icon: <TrophyIcon />, active: (path: string) => path.startsWith(routePaths.tournaments) },
           { to: routePaths.sportsMatches, label: "Partidos", icon: <ChartIcon />, active: (path: string) => path.startsWith(routePaths.sportsMatches) },
@@ -57,7 +61,7 @@ export function SportsShell({ children }: { children: ReactNode }) {
     ...(hasPermission("roles.view")
       ? [{ to: routePaths.roles, label: "Roles", icon: <ShieldIcon />, active: (path: string) => path.startsWith("/admin/roles") }]
       : []),
-  ];
+  ].filter((item, index, items) => items.findIndex((other) => other.to === item.to) === index);
 
   return (
     <div className="sports-canvas flex min-h-screen flex-col text-white lg:flex-row">
