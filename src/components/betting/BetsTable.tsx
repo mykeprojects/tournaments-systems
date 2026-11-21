@@ -87,7 +87,21 @@ export default function BetsTable({
                     {statusLabel[bet.status]}
                   </span>
                 </td>
-                <td className="px-4 py-3">{currency.format(bet.settledAmount)}</td>
+                <td className="px-4 py-3">
+                  {bet.status === "WON" ? (
+                    <span className="font-bold text-emerald-200">
+                      Ganaste {currency.format(bet.settledAmount)}
+                    </span>
+                  ) : bet.status === "LOST" ? (
+                    <span className="text-red-200">Sin premio · {currency.format(0)}</span>
+                  ) : bet.status === "VOIDED" ? (
+                    <span className="text-amber-100">Devuelto {currency.format(bet.settledAmount)}</span>
+                  ) : bet.status === "CANCELLED" ? (
+                    <span className="text-slate-300">Apuesta cancelada</span>
+                  ) : (
+                    <span className="text-sky-200">Pendiente de liquidación</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-xs text-slate-400">
                   {dateTime.format(new Date(bet.createdAt))}
                 </td>

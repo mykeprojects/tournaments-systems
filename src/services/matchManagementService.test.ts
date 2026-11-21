@@ -19,14 +19,6 @@ describe("matchManagementService", () => {
     expect(get).toHaveBeenNthCalledWith(3, "/players", { params: { teamId: 34 } });
   });
 
-  it("registers an official result on the selected match", async () => {
-    const patch = vi.spyOn(sportClient, "patch").mockResolvedValue({ data: {} } as never);
-
-    await matchManagementService.registerResult(12, "HOME");
-
-    expect(patch).toHaveBeenCalledWith("/matches/12/result", { officialResult: "HOME" });
-  });
-
   it("creates, updates, and removes annotations within their match resource", async () => {
     const post = vi.spyOn(sportClient, "post").mockResolvedValue({ data: {} } as never);
     const patch = vi.spyOn(sportClient, "patch").mockResolvedValue({ data: {} } as never);

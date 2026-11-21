@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MatchAnnotations from "../../components/matches/MatchAnnotations";
-import MatchResultForm from "../../components/matches/MatchResultForm";
 import Icon from "../../components/icons/Icon";
 import { readSportError } from "../../infrastructure/backend/SportHttpClient";
-import type { OfficialResult } from "../../models/betting";
 import type {
   MatchAnnotation,
   MatchManagement,
@@ -30,16 +28,19 @@ export default function MatchManagementPage() {
   const [matches, setMatches] = useState<MatchManagement[]>([]);
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [annotations, setAnnotations] = useState<MatchAnnotation[]>([]);
-  const [players, setPlayers] = useState<MatchParticipantPlayer[]>([]);
+  const [homePlayers, setHomePlayers] = useState<MatchParticipantPlayer[]>([]);
+  const [awayPlayers, setAwayPlayers] = useState<MatchParticipantPlayer[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [resultSubmitting, setResultSubmitting] = useState(false);
   const [annotationSaving, setAnnotationSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [annotationToDelete, setAnnotationToDelete] = useState<MatchAnnotation | null>(null);
+  const [viewMode, setViewMode] = useState<"manage" | "finished">("manage");
+  const [matchAction, setMatchAction] = useState<"start" | "finish" | null>(null);
+  const [partialScores, setPartialScores] = useState<Record<number, { home: number; away: number }>>({});
 
   const loadMatches = useCallback(async () => {
     try {
@@ -62,15 +63,87 @@ export default function MatchManagementPage() {
     void loadMatches();
   }, [loadMatches]);
 
-  const selectedMatch = useMemo(
-    () => matches.find((match) => String(match.id) === selectedMatchId) ?? null,
-    [matches, selectedMatchId],
+  useEffect(() => {
+    if (matches.length === 0) return;
+
+    let active = true;
+    Promise.all(
+      matches.map(async (match) => {
+        try {
+          const items = await matchManagementService.listAnnotations(match.id);
+          return {
+            id: match.id,
+            home: items.filter((item) => item.teamId === match.homeTeamId).length,
+            away: items.filter((item) => item.teamId === match.awayTeamId).length,
+          };
+        } catch {
+          return { id: match.id, home: 0, away: 0 };
+        }
+      }),
+    ).then((scores) => {
+      if (!active) return;
+      setPartialScores(Object.fromEntries(
+        scores.map((score) => [score.id, { home: score.home, away: score.away }]),
+      ));
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [matches]);
+
+  const finishedMatches = useMemo(
+    () => matches.filter((match) => match.status === "FINISHED"),
+    [matches],
   );
+  const managementMatches = useMemo(
+    () => matches.filter((match) => match.status !== "FINISHED" && match.status !== "CANCELLED"),
+    [matches],
+  );
+  const selectedMatch = useMemo(
+    () =>
+      (viewMode === "finished" ? finishedMatches : managementMatches).find(
+        (match) => String(match.id) === selectedMatchId,
+      ) ?? null,
+    [finishedMatches, managementMatches, selectedMatchId, viewMode],
+  );
+
+  useEffect(() => {
+    if (viewMode !== "finished") return;
+    if (!finishedMatches.some((match) => String(match.id) === selectedMatchId)) {
+      setSelectedMatchId(String(finishedMatches[0]?.id ?? ""));
+    }
+  }, [finishedMatches, selectedMatchId, viewMode]);
+
+  useEffect(() => {
+    if (viewMode !== "manage") return;
+    if (!managementMatches.some((match) => String(match.id) === selectedMatchId)) {
+      setSelectedMatchId(String(managementMatches[0]?.id ?? ""));
+    }
+  }, [managementMatches, selectedMatchId, viewMode]);
+
+  const refreshPartialScore = useCallback(async (matchId: number) => {
+    const match = matches.find((item) => item.id === matchId);
+    if (!match) return;
+    try {
+      const items = await matchManagementService.listAnnotations(matchId);
+      setPartialScores((current) => ({
+        ...current,
+        [matchId]: {
+          home: items.filter((item) => item.teamId === match.homeTeamId).length,
+          away: items.filter((item) => item.teamId === match.awayTeamId).length,
+        },
+      }));
+    } catch {
+      // Keep the last known score if annotations cannot be refreshed.
+    }
+  }, [matches]);
 
   useEffect(() => {
     if (!selectedMatch) {
       setAnnotations([]);
-      setPlayers([]);
+      setHomePlayers([]);
+      setAwayPlayers([]);
       setLoadingDetails(false);
       setDetailsError(null);
       return;
@@ -78,7 +151,8 @@ export default function MatchManagementPage() {
 
     let active = true;
     setAnnotations([]);
-    setPlayers([]);
+    setHomePlayers([]);
+    setAwayPlayers([]);
     setLoadingDetails(true);
     setDetailsError(null);
     Promise.all([
@@ -88,12 +162,9 @@ export default function MatchManagementPage() {
     ])
       .then(([loadedAnnotations, homePlayers, awayPlayers]) => {
         if (!active) return;
-        const participants = new Map<number, MatchParticipantPlayer>();
-        for (const player of [...homePlayers, ...awayPlayers]) {
-          participants.set(player.id, player);
-        }
         setAnnotations(orderedAnnotations(loadedAnnotations));
-        setPlayers([...participants.values()].sort((left, right) => left.fullName.localeCompare(right.fullName, "es")));
+        setHomePlayers([...homePlayers].sort((left, right) => left.fullName.localeCompare(right.fullName, "es")));
+        setAwayPlayers([...awayPlayers].sort((left, right) => left.fullName.localeCompare(right.fullName, "es")));
       })
       .catch((error: unknown) => {
         if (active) setDetailsError(readSportError(error));
@@ -107,21 +178,6 @@ export default function MatchManagementPage() {
     };
   }, [selectedMatch]);
 
-  const registerResult = async (result: OfficialResult) => {
-    if (!selectedMatch) return;
-    setResultSubmitting(true);
-    setNotice(null);
-    try {
-      const updated = await matchManagementService.registerResult(selectedMatch.id, result);
-      setMatches((current) => current.map((match) => (match.id === updated.id ? updated : match)));
-      setNotice({ tone: "ok", message: "El resultado del partido fue actualizado." });
-    } catch (error) {
-      setNotice({ tone: "error", message: readSportError(error) });
-    } finally {
-      setResultSubmitting(false);
-    }
-  };
-
   const createAnnotation = async (input: MatchAnnotationInput): Promise<boolean> => {
     if (!selectedMatch) return false;
     setAnnotationSaving(true);
@@ -129,6 +185,7 @@ export default function MatchManagementPage() {
     try {
       const created = await matchManagementService.createAnnotation(selectedMatch.id, input);
       setAnnotations((current) => orderedAnnotations([...current, created]));
+      await refreshPartialScore(selectedMatch.id);
       setNotice({ tone: "ok", message: "La anotación fue registrada." });
       return true;
     } catch (error) {
@@ -148,6 +205,7 @@ export default function MatchManagementPage() {
       setAnnotations((current) =>
         orderedAnnotations(current.map((annotation) => (annotation.id === id ? updated : annotation))),
       );
+      await refreshPartialScore(selectedMatch.id);
       setNotice({ tone: "ok", message: "La anotación fue actualizada." });
       return true;
     } catch (error) {
@@ -165,6 +223,7 @@ export default function MatchManagementPage() {
     try {
       await matchManagementService.removeAnnotation(selectedMatch.id, annotationToDelete.id);
       setAnnotations((current) => current.filter((annotation) => annotation.id !== annotationToDelete.id));
+      await refreshPartialScore(selectedMatch.id);
       setNotice({ tone: "ok", message: "La anotación fue eliminada. El jugador y el partido se conservaron." });
       setAnnotationToDelete(null);
     } catch (error) {
@@ -174,12 +233,43 @@ export default function MatchManagementPage() {
     }
   };
 
+  const startMatch = async () => {
+    if (!selectedMatch) return;
+    setMatchAction("start");
+    setNotice(null);
+    try {
+      const updated = await matchManagementService.startMatch(selectedMatch.id);
+      setMatches((current) => current.map((match) => (match.id === updated.id ? updated : match)));
+      setNotice({ tone: "ok", message: "El partido fue iniciado. Ya se pueden registrar anotaciones." });
+    } catch (error) {
+      setNotice({ tone: "error", message: readSportError(error) });
+    } finally {
+      setMatchAction(null);
+    }
+  };
+
+  const finishMatch = async () => {
+    if (!selectedMatch) return;
+    setMatchAction("finish");
+    setNotice(null);
+    try {
+      const updated = await matchManagementService.finishMatch(selectedMatch.id);
+      setMatches((current) => current.map((match) => (match.id === updated.id ? updated : match)));
+      await refreshPartialScore(selectedMatch.id);
+      setNotice({ tone: "ok", message: "El partido fue finalizado y el ganador se calculó a partir de las anotaciones." });
+    } catch (error) {
+      setNotice({ tone: "error", message: readSportError(error) });
+    } finally {
+      setMatchAction(null);
+    }
+  };
+
   return (
     <div>
       <PageHeader
         icon={<Icon name="stadium" className="h-5 w-5" />}
         title="Resultados y anotaciones"
-        subtitle="Administra el resultado oficial y los acontecimientos de cada partido."
+        subtitle="Administra las anotaciones y determina el resultado del partido."
         actions={
           <button
             type="button"
@@ -209,11 +299,24 @@ export default function MatchManagementPage() {
       )}
       <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
+      <div className="mb-4 flex gap-2">
+        <button type="button" onClick={() => setViewMode("manage")}
+          className={`rounded-lg px-4 py-2 text-sm font-bold ${viewMode === "manage" ? "bg-[#3dff7a] text-[#04210f]" : "border border-white/10 text-slate-300"}`}>
+          Gestionar partidos
+        </button>
+        <button type="button" onClick={() => setViewMode("finished")}
+          className={`rounded-lg px-4 py-2 text-sm font-bold ${viewMode === "finished" ? "bg-[#3dff7a] text-[#04210f]" : "border border-white/10 text-slate-300"}`}>
+          Partidos finalizados
+        </button>
+      </div>
+
       <Panel title="Seleccionar partido" className="mb-5">
         {loadingMatches && matches.length === 0 ? (
           <EmptyNote>Cargando partidos…</EmptyNote>
         ) : matches.length === 0 ? (
           <EmptyNote>No hay partidos registrados.</EmptyNote>
+        ) : viewMode === "finished" && finishedMatches.length === 0 ? (
+          <EmptyNote>No hay partidos finalizados todavía.</EmptyNote>
         ) : (
           <div className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <label className="block text-xs font-semibold text-slate-300">
@@ -227,9 +330,11 @@ export default function MatchManagementPage() {
                 }}
                 className="mt-1 w-full rounded-lg border border-white/10 bg-[#071321] px-3 py-2.5 text-sm text-white"
               >
-                {matches.map((match) => (
+                {(viewMode === "finished" ? finishedMatches : managementMatches).map((match) => (
                   <option key={match.id} value={match.id}>
-                    {match.homeTeam} vs {match.awayTeam}
+                    {viewMode === "finished"
+                      ? `${match.homeTeam} ${partialScores[match.id]?.home ?? 0} - ${partialScores[match.id]?.away ?? 0} ${match.awayTeam} · Final`
+                      : `${match.homeTeam} ${partialScores[match.id]?.home ?? 0} - ${partialScores[match.id]?.away ?? 0} ${match.awayTeam}`}
                   </option>
                 ))}
               </select>
@@ -249,20 +354,32 @@ export default function MatchManagementPage() {
         <>
           <div className="mb-4">
             <h2 className="text-lg font-bold text-white">
-              {selectedMatch.homeTeam} <span className="text-slate-500">vs</span> {selectedMatch.awayTeam}
+              {selectedMatch.homeTeam}
+              <span className="mx-3 text-[#3dff7a]">
+                {partialScores[selectedMatch.id]?.home ?? 0}
+                {" - "}
+                {partialScores[selectedMatch.id]?.away ?? 0}
+              </span>
+              {selectedMatch.awayTeam}
             </h2>
             <p className="mt-1 text-sm text-slate-400">
               Las anotaciones solo pueden asociarse a jugadores con plantilla activa en uno de estos equipos.
             </p>
           </div>
-          <div className="mb-5">
-            <MatchResultForm
-              key={selectedMatch.id}
-              match={selectedMatch}
-              submitting={resultSubmitting}
-              onSubmit={(result) => void registerResult(result)}
-            />
-          </div>
+          {viewMode === "manage" && (
+            <div className="mb-5 flex flex-wrap gap-3">
+              {selectedMatch.status !== "IN_PROGRESS" && selectedMatch.status !== "FINISHED" && selectedMatch.status !== "CANCELLED" && (
+                <button type="button" onClick={() => void startMatch()} disabled={matchAction !== null} className={primaryButtonClass}>
+                  {matchAction === "start" ? "Iniciando…" : "Iniciar partido"}
+                </button>
+              )}
+              {selectedMatch.status === "IN_PROGRESS" && (
+                <button type="button" onClick={() => void finishMatch()} disabled={matchAction !== null} className={ghostButtonClass}>
+                  {matchAction === "finish" ? "Finalizando…" : "Finalizar partido"}
+                </button>
+              )}
+            </div>
+          )}
           {loadingDetails ? (
             <Panel title="Anotaciones del partido">
               <EmptyNote>Cargando anotaciones y jugadores participantes…</EmptyNote>
@@ -274,8 +391,9 @@ export default function MatchManagementPage() {
           ) : (
             <MatchAnnotations
               annotations={annotations}
-              players={players}
-              disabled={selectedMatch.status === "CANCELLED"}
+              homeTeam={{ id: selectedMatch.homeTeamId, name: selectedMatch.homeTeam, players: homePlayers }}
+              awayTeam={{ id: selectedMatch.awayTeamId, name: selectedMatch.awayTeam, players: awayPlayers }}
+              disabled={selectedMatch.status !== "IN_PROGRESS"}
               saving={annotationSaving}
               deletingId={deletingId}
               onCreate={(input) => createAnnotation(input)}

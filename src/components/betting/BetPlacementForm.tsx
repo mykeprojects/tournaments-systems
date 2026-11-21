@@ -35,8 +35,18 @@ const BetPlacementForm = ({
   const odd =
     selection === "HOME" ? match.homeOdd : selection === "AWAY" ? match.awayOdd : match.drawOdd;
   const stakeAmount = Number(stake);
+  const bettingClosed =
+    match.status === "FINISHED" ||
+    match.status === "CANCELLED" ||
+    match.status === "BETTING_CLOSED" ||
+    match.status === "IN_PROGRESS" ||
+    new Date(match.startsAt).getTime() <= Date.now();
   const canSubmit =
-    paymentMethodId > 0 && Number.isFinite(stakeAmount) && stakeAmount > 0 && !submitting;
+    !bettingClosed &&
+    paymentMethodId > 0 &&
+    Number.isFinite(stakeAmount) &&
+    stakeAmount > 0 &&
+    !submitting;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

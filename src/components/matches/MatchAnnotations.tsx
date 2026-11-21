@@ -5,12 +5,19 @@ import { Avatar, EmptyNote, Field, Panel } from "../../sports/ui";
 import { fieldClass, ghostButtonClass, primaryButtonClass } from "../../sports/format";
 
 type AnnotationDraft = {
+  teamId: string;
   playerId: string;
   minute: string;
   description: string;
 };
 
-const emptyDraft = (): AnnotationDraft => ({ playerId: "", minute: "", description: "" });
+const emptyDraft = (): AnnotationDraft => ({ teamId: "", playerId: "", minute: "", description: "" });
+
+type AnnotationTeam = {
+  id: number;
+  name: string;
+  players: MatchParticipantPlayer[];
+};
 
 function toInput(draft: AnnotationDraft): MatchAnnotationInput {
   return {
@@ -22,7 +29,8 @@ function toInput(draft: AnnotationDraft): MatchAnnotationInput {
 
 export default function MatchAnnotations({
   annotations,
-  players,
+  homeTeam,
+  awayTeam,
   disabled,
   saving,
   deletingId,
@@ -31,7 +39,8 @@ export default function MatchAnnotations({
   onDelete,
 }: {
   annotations: MatchAnnotation[];
-  players: MatchParticipantPlayer[];
+  homeTeam: AnnotationTeam;
+  awayTeam: AnnotationTeam;
   disabled: boolean;
   saving: boolean;
   deletingId: number | null;
@@ -42,6 +51,10 @@ export default function MatchAnnotations({
   const [draft, setDraft] = useState<AnnotationDraft>(emptyDraft);
   const [editing, setEditing] = useState<MatchAnnotation | null>(null);
   const [editDraft, setEditDraft] = useState<AnnotationDraft>(emptyDraft);
+  const teams = [homeTeam, awayTeam];
+  const playersForTeam = (teamId: string) =>
+    teams.find((team) => String(team.id) === teamId)?.players ?? [];
+  const allPlayers = [...homeTeam.players, ...awayTeam.players];
 
   const submitNew = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,7 +63,9 @@ export default function MatchAnnotations({
 
   const startEditing = (annotation: MatchAnnotation) => {
     setEditing(annotation);
+    const teamId = String(annotation.teamId);
     setEditDraft({
+      teamId,
       playerId: String(annotation.playerId),
       minute: annotation.minute == null ? "" : String(annotation.minute),
       description: annotation.description,
@@ -67,15 +82,33 @@ export default function MatchAnnotations({
     <Panel title="Anotaciones del partido">
       {!disabled && (
         <form onSubmit={submitNew} className="grid gap-3 border-b border-white/5 p-4 sm:grid-cols-2">
+          <Field label="Equipo participante" required>
+            <select
+              value={draft.teamId}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, teamId: event.target.value, playerId: "" }))
+              }
+              className={fieldClass()}
+              required
+            >
+              <option value="">Selecciona un equipo</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>{team.name}</option>
+              ))}
+            </select>
+          </Field>
           <Field label="Jugador participante" required>
             <select
               value={draft.playerId}
               onChange={(event) => setDraft((current) => ({ ...current, playerId: event.target.value }))}
               className={fieldClass()}
               required
+              disabled={!draft.teamId}
             >
-              <option value="">Selecciona un jugador</option>
-              {players.map((player) => (
+              <option value="">
+                {draft.teamId ? "Selecciona un jugador" : "Primero selecciona un equipo"}
+              </option>
+              {playersForTeam(draft.teamId).map((player) => (
                 <option key={player.id} value={player.id}>
                   {player.fullName} · {player.position}
                 </option>
@@ -111,12 +144,12 @@ export default function MatchAnnotations({
             <button
               type="submit"
               className={primaryButtonClass}
-              disabled={saving || players.length === 0}
+              disabled={saving || allPlayers.length === 0 || !draft.teamId || !draft.playerId}
             >
               {saving ? "Guardando…" : "Agregar anotación"}
             </button>
           </div>
-          {players.length === 0 && (
+          {allPlayers.length === 0 && (
             <p className="text-xs text-amber-200 sm:col-span-2">
               No hay jugadores con plantilla activa en los equipos participantes.
             </p>
@@ -125,7 +158,7 @@ export default function MatchAnnotations({
       )}
       {disabled && (
         <p className="border-b border-white/5 px-4 py-3 text-xs text-amber-200">
-          No se pueden agregar ni modificar anotaciones en un partido cancelado. Las anotaciones existentes sí se pueden eliminar.
+          Las anotaciones solo se pueden agregar, modificar o eliminar mientras el partido está en juego.
         </p>
       )}
       {annotations.length === 0 ? (
@@ -143,7 +176,8 @@ export default function MatchAnnotations({
             </thead>
             <tbody>
               {annotations.map((annotation) => {
-                const player = players.find((item) => item.id === annotation.playerId);
+                const player = allPlayers.find((item) => item.id === annotation.playerId);
+                const team = teams.find((item) => item.id === annotation.teamId);
                 const isEditing = editing?.id === annotation.id;
                 return (
                   <tr key={annotation.id} className="border-t border-white/5 align-top">
@@ -151,12 +185,26 @@ export default function MatchAnnotations({
                     <td className="px-3 py-3">
                       <span className="flex items-center gap-2">
                         <Avatar name={player?.fullName ?? `Jugador #${annotation.playerId}`} />
-                        {player?.fullName ?? `Jugador #${annotation.playerId}`}
+                        {team?.name ? `${team.name} · ` : ""}{player?.fullName ?? `Jugador #${annotation.playerId}`}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-slate-300">
                       {isEditing ? (
                         <form id={`annotation-edit-${annotation.id}`} onSubmit={submitEdit} className="grid gap-3">
+                          <select
+                            value={editDraft.teamId}
+                            onChange={(event) =>
+                              setEditDraft((current) => ({ ...current, teamId: event.target.value, playerId: "" }))
+                            }
+                            className={fieldClass()}
+                            required
+                          >
+                            {teams.map((participantTeam) => (
+                              <option key={participantTeam.id} value={participantTeam.id}>
+                                {participantTeam.name}
+                              </option>
+                            ))}
+                          </select>
                           <select
                             value={editDraft.playerId}
                             onChange={(event) =>
@@ -165,7 +213,7 @@ export default function MatchAnnotations({
                             className={fieldClass()}
                             required
                           >
-                            {players.map((participant) => (
+                            {playersForTeam(editDraft.teamId).map((participant) => (
                               <option key={participant.id} value={participant.id}>
                                 {participant.fullName} · {participant.position}
                               </option>
@@ -226,7 +274,7 @@ export default function MatchAnnotations({
                               type="button"
                               className="rounded-lg border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-400/10 disabled:opacity-50"
                               onClick={() => onDelete(annotation)}
-                              disabled={deletingId === annotation.id}
+                              disabled={disabled || deletingId === annotation.id}
                             >
                               {deletingId === annotation.id ? "Eliminando…" : "Eliminar"}
                             </button>

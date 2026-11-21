@@ -1,6 +1,5 @@
 import { sportClient } from "../infrastructure/backend/SportHttpClient";
 import type { MatchAnnotation, MatchManagement, MatchParticipantPlayer } from "../models/matches";
-import type { OfficialResult } from "../models/betting";
 
 export interface MatchAnnotationInput {
   playerId: number;
@@ -26,10 +25,13 @@ export const matchManagementService = {
     return response.data;
   },
 
-  async registerResult(matchId: number, officialResult: OfficialResult): Promise<MatchManagement> {
-    const response = await sportClient.patch<MatchManagement>(`/matches/${matchId}/result`, {
-      officialResult,
-    });
+  async startMatch(matchId: number): Promise<MatchManagement> {
+    const response = await sportClient.post<MatchManagement>(`/matches/${matchId}/start`);
+    return response.data;
+  },
+
+  async finishMatch(matchId: number): Promise<MatchManagement> {
+    const response = await sportClient.post<MatchManagement>(`/matches/${matchId}/finish`);
     return response.data;
   },
 

@@ -74,11 +74,17 @@ export default function MatchTrackingPage() {
   const loadMatches = useCallback(async () => {
     try {
       const loaded = await matchManagementService.listMatches();
-      setMatches(loaded);
+      const trackable = loaded.filter((match) =>
+        match.status === "SCHEDULED" ||
+        match.status === "BETTING_OPEN" ||
+        match.status === "BETTING_CLOSED" ||
+        match.status === "IN_PROGRESS",
+      );
+      setMatches(trackable);
       setSelectedMatchId((current) =>
-        current && loaded.some((match) => String(match.id) === current)
+        current && trackable.some((match) => String(match.id) === current)
           ? current
-          : String(loaded[0]?.id ?? ""),
+          : String(trackable[0]?.id ?? ""),
       );
       setLoadError(null);
     } catch (error) {
@@ -136,22 +142,27 @@ export default function MatchTrackingPage() {
       },
     );
 
-    void matchTrackingService.getBoard(matchId)
-      .then((loadedBoard) => {
-        if (active) setBoard(loadedBoard);
-      })
-      .catch((error: unknown) => {
-        if (active) setTrackingError(readSportError(error));
-      })
-      .finally(() => {
-        if (active) setLoadingBoard(false);
-      });
+    const match = matches.find((item) => item.id === matchId);
+    if (!match || match.status !== "IN_PROGRESS") {
+      setLoadingBoard(false);
+    } else {
+      void matchTrackingService.getBoard(matchId)
+        .then((loadedBoard) => {
+          if (active) setBoard(loadedBoard);
+        })
+        .catch((error: unknown) => {
+          if (active) setTrackingError(readSportError(error));
+        })
+        .finally(() => {
+          if (active) setLoadingBoard(false);
+        });
+    }
 
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [applyEvent, selectedMatchId]);
+  }, [applyEvent, selectedMatchId, matches]);
 
   const startTracking = async () => {
     if (!selectedMatch) return;
@@ -234,6 +245,7 @@ export default function MatchTrackingPage() {
 
   const matchIsTerminal =
     selectedMatch?.status === "FINISHED" || selectedMatch?.status === "CANCELLED";
+  const matchIsStarted = selectedMatch?.status === "IN_PROGRESS";
   const socketState = selectedMatch ? connectionState : "DISCONNECTED";
   const monitoredPlayers = board?.teams.reduce((total, team) => total + team.players.length, 0) ?? 0;
   const trackingActionPending = starting || pausing || resuming || stopping;
@@ -344,6 +356,10 @@ export default function MatchTrackingPage() {
                 {canManageTracking && matchIsTerminal ? (
                   <p className="text-xs text-amber-200">
                     No se puede iniciar el seguimiento de un partido finalizado o cancelado.
+                  </p>
+                ) : canManageTracking && !matchIsStarted ? (
+                  <p className="text-xs text-amber-200">
+                    El partido debe iniciarse desde Gestión de resultados antes de iniciar el seguimiento.
                   </p>
                 ) : canManageTracking ? (
                   <button

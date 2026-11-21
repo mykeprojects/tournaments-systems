@@ -94,6 +94,7 @@ export default function PartidosPage() {
   const [phases, setPhases] = useState<TournamentPhase[]>([]);
   const [registrations, setRegistrations] = useState<TournamentRegistration[]>([]);
   const [phaseFilter, setPhaseFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "SCHEDULED" | "IN_PROGRESS" | "FINISHED">("ALL");
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -115,6 +116,20 @@ export default function PartidosPage() {
     () => new Map(registrations.map((item) => [item.teamId, item.team])),
     [registrations],
   );
+
+  const visibleMatches = useMemo(() => {
+    if (!isFan || statusFilter === "ALL") return matches;
+    if (statusFilter === "SCHEDULED") {
+      return matches.filter((match) =>
+        match.status === "SCHEDULED" ||
+        match.status === "BETTING_OPEN" ||
+        match.status === "BETTING_CLOSED",
+      );
+    }
+    if (statusFilter === "IN_PROGRESS") return matches.filter((match) => match.status === "IN_PROGRESS");
+    return matches.filter((match) => match.status === "FINISHED");
+  }, [isFan, matches, statusFilter]);
+
 
   const loadInitialData = useCallback(async () => {
     document.title = "Partidos - Sports System";
@@ -345,7 +360,7 @@ export default function PartidosPage() {
       ) : (
         <>
           {tournaments.length > 0 && (
-            <div className="mb-4 grid gap-3 md:grid-cols-2">
+            <div className="mb-4 grid gap-3 md:grid-cols-3">
               <select
                 value={tournamentId}
                 onChange={(event) => {
@@ -370,6 +385,19 @@ export default function PartidosPage() {
                   <option key={phase.id} value={phase.id}>{phase.name}</option>
                 ))}
               </select>
+              {isFan && (
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
+                  className={fieldClass()}
+                  aria-label="Filtrar partidos por estado"
+                >
+                  <option value="ALL">Todos los partidos</option>
+                  <option value="SCHEDULED">Partidos agendados</option>
+                  <option value="IN_PROGRESS">Partidos en curso</option>
+                  <option value="FINISHED">Partidos finalizados</option>
+                </select>
+              )}
             </div>
           )}
 
@@ -391,16 +419,29 @@ export default function PartidosPage() {
                     <th className="px-3 py-3 font-semibold">Fecha</th>
                     <th className="px-3 py-3 font-semibold">Sede</th>
                     <th className="px-3 py-3 font-semibold">Estado</th>
+                    <th className="px-3 py-3 font-semibold">Resultado</th>
                     {canManageMatches && <th className="px-3 py-3 font-semibold">Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {matches.map((match) => {
+                  {visibleMatches.map((match) => {
                     const phase = match.phaseId ? phaseById.get(match.phaseId) : undefined;
                     return (
                       <tr key={match.id} className="border-t border-white/5 hover:bg-white/[0.03]">
                         <td className="px-4 py-3 font-semibold">
-                          {match.homeTeam} <span className="text-slate-500">vs</span> {match.awayTeam}
+                          {isFan && (match.status === "FINISHED" || match.status === "IN_PROGRESS") ? (
+                            <>
+                              {match.homeTeam}
+                              <span className="mx-2 text-[#3dff7a]">
+                                {match.homeScore ?? 0} - {match.awayScore ?? 0}
+                              </span>
+                              {match.awayTeam}
+                            </>
+                          ) : (
+                            <>
+                              {match.homeTeam} <span className="text-slate-500">vs</span> {match.awayTeam}
+                            </>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-slate-300">{phase?.name ?? "—"}</td>
                         <td className="px-3 py-3 text-slate-300">{match.roundLabel ?? "—"}</td>
@@ -410,6 +451,17 @@ export default function PartidosPage() {
                           <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusClass[match.status]}`}>
                             {MATCH_STATUS_LABEL[match.status]}
                           </span>
+                        </td>
+                        <td className="px-3 py-3 text-slate-300">
+                          {match.status === "FINISHED"
+                            ? match.officialResult === "HOME"
+                              ? `${match.homeTeam} gana`
+                              : match.officialResult === "AWAY"
+                                ? `${match.awayTeam} gana`
+                                : match.officialResult === "DRAW"
+                                  ? "Empate"
+                                  : "Anulado"
+                            : "—"}
                         </td>
                         {canManageMatches && (
                           <td className="px-3 py-3">
@@ -432,7 +484,7 @@ export default function PartidosPage() {
                   })}
                 </tbody>
               </table>
-              {matches.length === 0 && <EmptyNote>No hay partidos programados.</EmptyNote>}
+              {visibleMatches.length === 0 && <EmptyNote>No hay partidos que coincidan con los filtros.</EmptyNote>}
             </div>
           </Panel>
         </>

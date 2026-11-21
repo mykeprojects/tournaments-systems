@@ -13,6 +13,8 @@ export interface MatchManagement {
   status: MatchStatus;
   bettingEnabled: boolean;
   officialResult: OfficialResult | null;
+  homeScore: number;
+  awayScore: number;
   homeOdd: number;
   awayOdd: number;
   drawOdd: number;
